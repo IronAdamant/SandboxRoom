@@ -1,0 +1,8 @@
+# Game data is binary: never diff or normalise line endings
+*.esp binary
+*.esm binary
+*.esl binary
+*.ba2 binary
+*.pex binary
+*.nif binary
+*.dds binary

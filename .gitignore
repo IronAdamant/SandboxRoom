@@ -1,0 +1,4 @@
+build/
+work/
+config.local.*
+__pycache__/
