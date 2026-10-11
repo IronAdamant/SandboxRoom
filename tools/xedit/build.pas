@@ -26,6 +26,7 @@
                                              an item that runs and redisplays the same menu.
                                              CONDITION: "-" or FUNCTION:PARAM:VALUE, run on the player
     script   | EDID | SCRIPTNAME             attach a script (once)
+    propremove | EDID | SCRIPTNAME | NAME    drop a script property the script no longer has (if present)
     prop     | EDID | SCRIPTNAME | NAME | TYPE | VALUE   set a script property. TYPE Object, Int32, Float, Bool or
                                              "Array of Object" (VALUE: tokens separated by commas)
 
@@ -638,6 +639,26 @@ begin
       Name(r)]));
 end;
 
+procedure OpPropRemove(edid, scriptName, propName: string);
+var
+  r, s, props: IInterface;
+  i: integer;
+begin
+  r := Rec(edid);
+  if not Assigned(r) then
+    Exit;
+  r := InCur(r);
+  s := ScriptEntry(r, scriptName);
+  if not Assigned(s) then
+    Exit;
+  props := ElementByPath(s, 'Properties');
+  for i := ElementCount(props) - 1 downto 0 do
+    if SameText(GetElementEditValues(ElementByIndex(props, i), 'propertyName'), propName) then begin
+      RemoveElement(props, i);
+      log.Add('removed property ' + edid + '.' + propName);
+    end;
+end;
+
 procedure OpProp(edid, scriptName, propName, typ, v: string);
 var
   r, s, props, p, arr, el: IInterface;
@@ -810,6 +831,7 @@ begin
     else if op = 'menuclear' then OpMenuClear(Field(line, 1))
     else if op = 'menu' then OpMenu(Field(line, 1), Field(line, 2), Field(line, 3), Field(line, 4), Field(line, 5))
     else if op = 'script' then OpScript(Field(line, 1), Field(line, 2))
+    else if op = 'propremove' then OpPropRemove(Field(line, 1), Field(line, 2), Field(line, 3))
     else if op = 'prop' then OpProp(Field(line, 1), Field(line, 2), Field(line, 3), Field(line, 4), Field(line, 5))
     else
       Err('unknown operation on line ' + IntToStr(i + 1) + ': ' + line);

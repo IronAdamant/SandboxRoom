@@ -1,34 +1,45 @@
 Scriptname SandboxRoom:GiveHolotapeScript extends Quest
-{Gives the player the Sandbox Room holotape once they have left Vault 111 (MQ102 stage 10, the same check the
-Creation Club content uses), or straight away on a save that is already past that point.}
+{Gives the player the Sandbox Room holotape as soon as they have a Pip-Boy: in Vault 111 right after picking it
+up, at once with an alternative-start mod that hands one out, or straight away on a save that already has one.
+Checks every CheckInterval seconds until then, and never gives a second holotape.}
 
 Holotape Property SBR_Holotape Auto Const Mandatory
-Quest Property MQ102 Auto Const Mandatory
-int Property LeftVaultStage = 10 Auto Const
+Form[] Property PipBoys Auto Const Mandatory
+{The Pip-Boy items (the vanilla one and its variants): having any of them counts.}
+float Property CheckInterval = 3.0 Auto Const
+float Property GiveDelay = 2.0 Auto Const
+{A short wait after the Pip-Boy turns up, so the holotape is not added during a load or a scene start.}
 
-int GiveTimer = 1
+int CheckTimer = 1
+int GiveTimer = 2
 
 Event OnInit()
-	If MQ102.GetStageDone(LeftVaultStage)
-		; Mid-game install: wait a moment so the item is not added during the save's load.
-		StartTimer(5, GiveTimer)
-	Else
-		RegisterForRemoteEvent(MQ102, "OnStageSet")
-	EndIf
-EndEvent
-
-Event Quest.OnStageSet(Quest akSender, int auiStageID, int auiItemID)
-	If auiStageID == LeftVaultStage
-		UnregisterForRemoteEvent(MQ102, "OnStageSet")
-		StartTimer(5, GiveTimer)
-	EndIf
+	StartTimer(CheckInterval, CheckTimer)
 EndEvent
 
 Event OnTimer(int aiTimerID)
-	If aiTimerID == GiveTimer
-		Actor player = Game.GetPlayer()
-		If player.GetItemCount(SBR_Holotape) == 0
-			player.AddItem(SBR_Holotape)
+	Actor player = Game.GetPlayer()
+	If player.GetItemCount(SBR_Holotape) > 0
+		Return  ; already given (or the player kept it): nothing more to do
+	EndIf
+	If aiTimerID == CheckTimer
+		If HasPipBoy(player)
+			StartTimer(GiveDelay, GiveTimer)
+		Else
+			StartTimer(CheckInterval, CheckTimer)
 		EndIf
+	ElseIf aiTimerID == GiveTimer
+		player.AddItem(SBR_Holotape)
 	EndIf
 EndEvent
+
+bool Function HasPipBoy(Actor akPlayer)
+	int i = 0
+	While i < PipBoys.Length
+		If akPlayer.GetItemCount(PipBoys[i]) > 0
+			Return True
+		EndIf
+		i += 1
+	EndWhile
+	Return False
+EndFunction

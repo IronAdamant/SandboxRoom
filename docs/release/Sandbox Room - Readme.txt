@@ -2,8 +2,8 @@ SANDBOX ROOM - by Deadmansprice
 A clean, up-to-date testing facility for Fallout 4, reached by holotape.
 
 GETTING THERE
-A few seconds after you leave Vault 111 (or shortly after loading an existing save), the (Sandbox Room) Holotape
-is added to your inventory. Play it from the Pip-Boy:
+A few seconds after you get the Pip-Boy (in Vault 111, with an alternative-start mod, or shortly after loading an
+existing save), the (Sandbox Room) Holotape is added to your inventory. Play it from the Pip-Boy:
   Teleport In   remembers exactly where you are and takes you to the Sandbox Room
   Teleport Out  takes you back to exactly where you were, with everything you are carrying
 Console: coc SandboxRoom (no return point that way).

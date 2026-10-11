@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -53,6 +54,9 @@ X0, X1, Y0, Y1 = -1536, 4608, -1024, 1024
 ARENA_X, LANE_X, BAY_X = 1024, 2560, 3072
 HALL_DOOR_X = 640                          # the door in the hall's south wall, to the lobby
 DOOR_SILL_LIFT = 1                         # doorway wall pieces sit this far up, see wall_ring()
+# Navmesh generation: build with SBR_NAVCUT=1 (adds walls over the arena doorways), generate the navmesh in the
+# Creation Kit, save, then build normally (the walls go; the navmesh stays cut, the arena an island).
+NAVCUT = os.environ.get('SBR_NAVCUT') == '1'
 
 # The wing: lobby (terminals), then the AI arena through a door on each side of them.
 LX0, LX1, LY0, LY1 = -256, 1536, -1536, -1024
@@ -672,6 +676,10 @@ def wing(s: Spec):
     wall_ring(s, 'SBR_Arena', AX0, AX1, AY0, AY1, doors={'N': WING_DOORS_X})
     for n, x in enumerate(WING_DOORS_X):
         door(s, f'SBR_ArenaDoor{n}', x, AY1, along_x=True)
+        if NAVCUT:
+            # a solid wall over the doorway, only while the navmesh is generated: the arena's navmesh then has no
+            # way into the lobby, so its enemies cannot follow the player out (the next normal build removes it)
+            s.ref(f'SBR_NavCut_{n}', '@HitLgRmMid02Wall01', x, AY1 - G // 2, rz=90)
     slab_grid(s, 'SBR_ArenaBase', AX0, AX1, AY0, AY1, 0, big=True)
     for i, x in enumerate(range(AX0 + 256, AX1, 512)):
         for j, y in enumerate(range(AY0 + 256, AY1, 512)):
@@ -824,7 +832,7 @@ def main_plugin(s: Spec, chests: dict):
 
     storage(s, chests)
 
-    s.comment('globals, holotape and the quest that hands it out after Vault 111')
+    s.comment('globals, holotape and the quest that hands it out once the player has a Pip-Boy')
     s.op('new', 'GLOB', 'SBR_ReturnSaved')
     s.op('set', 'SBR_ReturnSaved', 'FNAM', 'Short')
     s.op('set', 'SBR_ReturnSaved', 'FLTV', '0')
@@ -850,7 +858,9 @@ def main_plugin(s: Spec, chests: dict):
     s.op('set', 'SBR_Main', 'DNAM\\Flags', '1')  # Start Game Enabled
     s.op('script', 'SBR_Main', 'SandboxRoom:GiveHolotapeScript')
     s.op('prop', 'SBR_Main', 'SandboxRoom:GiveHolotapeScript', 'SBR_Holotape', 'Object', '@SBR_Holotape')
-    s.op('prop', 'SBR_Main', 'SandboxRoom:GiveHolotapeScript', 'MQ102', 'Object', '@MQ102')
+    s.op('propremove', 'SBR_Main', 'SandboxRoom:GiveHolotapeScript', 'MQ102')  # before 1.0: waited for MQ102
+    s.op('prop', 'SBR_Main', 'SandboxRoom:GiveHolotapeScript', 'PipBoys', 'Array of Object',
+         '@Pipboy,@PipboyDusty,@PipboyVault81')  # handed out once the player has a Pip-Boy
     s.op('script', 'SBR_Main', 'SandboxRoom:SpawnTrackerScript')
 
     s.comment('arena: an "ARENA" sign over the hall\'s door to the lobby; in the lobby the terminals stand in a '
