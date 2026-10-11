@@ -5,7 +5,7 @@ A few seconds after you get the Pip-Boy (alternative starts too), the (Sandbox R
 - Crafting stations incl. robot workbench and Nuka-Mixer, plus a power armour station with 3 frames.
 - Signed storage cabinets that never run out, base game and every DLC: Weapons & Ammo, Apparel, Mods, Power Armor, Aid, Misc.
 - Target range: holographic targets that stand still, never fight back and give no XP. Set health (up to 100,000) and armour. Galleries at two heights.
-- Arena: base game, Automatron, Far Harbor and Nuka-World enemies - pick one and how many (1-10). They stay frozen until you walk in.
+- Arena: base game, Automatron, Far Harbor and Nuka-World enemies - pick one and how many (1-10). They stay frozen until you walk in and can't follow you out.
 
 Playing fair is up to you: save before teleporting in.
 

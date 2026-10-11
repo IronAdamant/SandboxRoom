@@ -37,10 +37,13 @@ ceiling lights.
   storeys 1 and 2 along its north wall.
 - Pick an enemy on a lobby terminal, then how many (1 to 10). Each one lands at a random spot across the arena with full AI, but stays frozen while you
   are outside the arena and wakes up as soon as you step through a door (and freezes again when you leave).
+- Enemies can't leave the arena: its navmesh (arena floor, balconies and stairs) is not connected to the lobby's,
+  so they have no path through the doors.
 
 **(Sandbox Room) Holotape**, added to your inventory a few seconds after you get the Pip-Boy (in Vault 111,
-with an alternative-start mod, or right away on an existing save): *Teleport In* saves your exact position and takes you to the room; inside, it offers *Teleport Out*
-instead, which returns you there with everything you carry. Everything in the room is free; playing fair is up
+with an alternative-start mod, or right away on an existing save): *Teleport In* saves your exact position and
+takes you to the room; inside, it offers *Teleport Out* instead, which returns you there with everything you
+carry. Everything in the room is free; playing fair is up
 to you (save before teleporting in, and load that save if you don't want to keep what you took). Console:
 `coc SandboxRoom`.
 
@@ -90,5 +93,17 @@ and close the Creation Kit before building: `build.py` refuses to run while it i
 the plugin has masters other than Fallout 4 and the five DLC.
 
 The navmesh is made in the Creation Kit (NavMesh > Generation > Recast, then Finalize Cell NavMeshes) with
-`Sandbox Room.esp` as the active file. After any Creation Kit save, re-run `build.py`: it also resets the header's
-next object ID, so new forms stay inside the ESL range.
+`Sandbox Room.esp` as the active file. The arena's navmesh must stay cut off from the lobby's, so generate it on
+a build with walls over the arena doorways:
+
+1. `SBR_NAVCUT=1 python tools/build/build.py ...` (adds the walls)
+2. In the Creation Kit: load `Sandbox Room.esp` as the active file, open the SandboxRoom cell, generate,
+   finalize, save, close.
+3. `python tools/build/build.py ...` (removes the walls; the cut navmesh stays).
+
+After any Creation Kit save, re-run `build.py`: it also resets the header's next object ID, so new forms stay
+inside the ESL range.
+
+**Regenerate the navmesh whenever the plugin's masters change.** Adding the DLC masters in 1.0 left the navmesh
+index out of step with the navmesh (the Creation Kit warns "Did not find matching NavMeshInfo" when the cell is
+opened), and the game crashed loading the room.

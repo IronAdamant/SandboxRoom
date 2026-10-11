@@ -15,8 +15,8 @@ WHAT'S INSIDE
 - Target range: four walled bays of holographic targets that stand still, never fight back and give no XP.
   Each bay's terminal sets the target, its health and its armour. Shooting galleries at two heights.
 - Arena: pick an enemy (base game, Automatron, Far Harbor, Nuka-World), then how many (1-10). Enemies stay frozen
-  until you walk in, and freeze again when you leave. Balconies at two heights. Kill or remove everything
-  spawned from the terminals.
+  until you walk in, and freeze again when you leave. They cannot follow you out of the arena. Balconies at two
+  heights. Kill or remove everything spawned from the terminals.
 
 PLAYING FAIR
 Everything in the room is free. Save before you teleport in, and load that save if you don't want to keep what
