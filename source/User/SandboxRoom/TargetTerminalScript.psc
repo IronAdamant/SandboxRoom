@@ -1,5 +1,6 @@
 Scriptname SandboxRoom:TargetTerminalScript extends Terminal
-{The terminal in front of a target bay. Items 1-9 pick the target type, 10-14 the health, 20 clears the bay.}
+{The terminal in front of a target bay. Items 1-9 pick the target type, 10-14 the health, 15-16 the armor,
+20 clears the bay.}
 
 SandboxRoom:TargetBayScript Property SBR_Bay Auto Const Mandatory
 
@@ -16,6 +17,10 @@ Event OnMenuItemRun(int auiMenuItemID, ObjectReference akTerminalRef)
 		SBR_Bay.SetHealth(10000.0)
 	ElseIf auiMenuItemID == 14
 		SBR_Bay.SetHealth(100000.0)
+	ElseIf auiMenuItemID == 15
+		SBR_Bay.SetArmor(false)
+	ElseIf auiMenuItemID == 16
+		SBR_Bay.SetArmor(true)
 	ElseIf auiMenuItemID == 20
 		SBR_Bay.Clear()
 	EndIf

@@ -1,8 +1,8 @@
 {
   Sandbox Room: build or update the plugins from a spec file (the SPEC parameter), one operation per line, fields
   separated by " | ". Lines starting with # are ignored. Safe to re-run: records and placed references are found
-  by editor ID and only created when missing, and a reference's position is only set when it is created (so
-  objects moved by hand in the Creation Kit stay where they are).
+  by editor ID and only created when missing. The spec is the layout's source of truth: every run puts each
+  reference where the spec says (a move made by hand in the Creation Kit must be copied into the spec).
 
     file     | NAME                          select the plugin to work on; created (ESL-flagged) if not loaded
     master   | NAME                          add a master to the current plugin
@@ -10,8 +10,14 @@
     new      | SIG | NEW_EDID                create an empty record
     set      | EDID | PATH | VALUE           set a field by xEdit path, adding missing parts on the way
     remove   | EDID | PATH                   remove a field if present
-    ref      | EDID | CELL | BASE | X Y Z | RX RY RZ | persistent?   place a reference (only when missing)
-    unref    | EDID | CELL                   delete a placed reference if it exists (e.g. retired walls)
+    ref      | EDID | CELL | BASE | X Y Z | RX RY RZ | OPTS   place a reference, or update it to match: base,
+                                             position and rotation. OPTS: "-" or any of persistent, scale=N,
+                                             swap=TOKEN (material swap), radius=N (light radius override)
+    prune    | CELL | PREFIX                 delete this plugin's refs in CELL whose editor IDs start with PREFIX
+                                             and that no ref operation above placed (taken out of the spec)
+    unref    | EDID | CELL                   delete a placed reference if it exists
+    prunerecords | PREFIX                    delete this plugin's records (not references) whose editor IDs
+                                             start with PREFIX and that no copy/new operation above made
     items    | EDID | TOKEN*COUNT ; ...      replace a container's inventory
     menuclear| EDID                          remove a terminal's menu items
     menu     | EDID | ID | TEXT | SUBMENU | CONDITION   append a terminal menu item. SUBMENU: a TERM, or "-" for
@@ -33,8 +39,8 @@ const
   MenuTemplate = 'VRWorkshopShared_VRTerminalConsoleTallOn';  // vanilla terminal whose menu items have conditions
 
 var
-  log, cache: TStringList;
-  cur: IInterface;
+  log, cache, refIdx, touched, made: TStringList;
+  cur, refCell: IInterface;
   nErr, nOk: integer;
 
 function Field(s: string; idx: integer): string;
@@ -235,12 +241,14 @@ begin
     log.Add('created ' + name);
   end;
   cache.Clear;
+  refCell := nil;
 end;
 
 procedure OpCopy(src, edid: string);
 var
   s, r: IInterface;
 begin
+  made.Add(edid);
   if Assigned(FindInFile(cur, edid)) then
     Exit;
   s := Token(src);
@@ -256,6 +264,7 @@ procedure OpNew(sig, edid: string);
 var
   g, r: IInterface;
 begin
+  made.Add(edid);
   if Assigned(FindInFile(cur, edid)) then
     Exit;
   g := GroupBySignature(cur, sig);
@@ -310,26 +319,145 @@ begin
   sl.Free;
 end;
 
-procedure OpRef(edid, cellId, base, pos, rot, persist: string);
+// Placed references of the current plugin's version of one cell, by editor ID (built once per cell: searching
+// the cell for every reference is quadratic and the room has well over a thousand of them).
+procedure IndexGroup(g: IInterface);
+var
+  i: integer;
+  e: IInterface;
+begin
+  for i := 0 to ElementCount(g) - 1 do begin
+    e := ElementByIndex(g, i);
+    if Signature(e) = 'GRUP' then
+      IndexGroup(e)
+    else if EditorID(e) <> '' then
+      refIdx.AddObject(EditorID(e), e);
+  end;
+end;
+
+procedure UseCell(cell: IInterface);
+begin
+  if Assigned(refCell) and Equals(refCell, cell) then
+    Exit;
+  refCell := cell;
+  refIdx.Clear;
+  touched.Clear;
+  IndexGroup(ChildGroup(cell));
+end;
+
+// OPTS: "-" or space-separated persistent, scale=N, swap=TOKEN (material swap), radius=N (light radius)
+function Opt(opts, key: string): string;
+var
+  sl: TStringList;
+  i: integer;
+begin
+  Result := '';
+  sl := TStringList.Create;
+  sl.Delimiter := ' ';
+  sl.StrictDelimiter := True;
+  sl.DelimitedText := opts;
+  for i := 0 to sl.Count - 1 do begin
+    if sl[i] = key then
+      Result := 'yes'
+    else if Copy(sl[i], 1, Length(key) + 1) = key + '=' then
+      Result := Copy(sl[i], Length(key) + 2, Length(sl[i]));
+  end;
+  sl.Free;
+end;
+
+procedure SetOrRemove(r: IInterface; path, v: string);
+begin
+  if v <> '' then
+    SetElementEditValues(r, path, Value(v))
+  else if Assigned(ElementByPath(r, path)) then
+    RemoveElement(r, path);
+end;
+
+// Place a reference, or bring an existing one in line with the spec (base, position, rotation, options).
+procedure OpRef(edid, cellId, base, pos, rot, opts: string);
 var
   cell, b, r: IInterface;
+  i: integer;
+  before: string;
 begin
   cell := Rec(cellId);
   b := Token(base);
   if not Assigned(cell) or not Assigned(b) then
     Exit;
   cell := InCur(cell);
-  if Assigned(FindInGroup(ChildGroup(cell), edid, True)) then
-    Exit;
-  r := Add(cell, 'REFR', True);
+  UseCell(cell);
+  i := refIdx.IndexOf(edid);
+  if i >= 0 then
+    r := ObjectToElement(refIdx.Objects[i])
+  else begin
+    r := Add(cell, 'REFR', True);
+    SetEditorID(r, edid);
+    if Opt(opts, 'persistent') <> '' then
+      SetIsPersistent(r, True);
+    refIdx.AddObject(edid, r);
+    log.Add('placed ' + edid);
+  end;
+  if (Opt(opts, 'persistent') <> '') and not GetIsPersistent(r) then
+    SetIsPersistent(r, True);
+  before := GetElementEditValues(r, 'NAME') + GetElementEditValues(r, 'DATA\Position\X') +
+    GetElementEditValues(r, 'DATA\Position\Y') + GetElementEditValues(r, 'DATA\Rotation\Z');
   SetElementEditValues(r, 'NAME', IntToHex(GetLoadOrderFormID(b), 8));
-  SetEditorID(r, edid);
   SetXYZ(r, 'DATA\Position', pos);
   SetXYZ(r, 'DATA\Rotation', rot);
-  if persist = 'persistent' then
-    SetIsPersistent(r, True);
+  if (i >= 0) and (before <> GetElementEditValues(r, 'NAME') + GetElementEditValues(r, 'DATA\Position\X') +
+    GetElementEditValues(r, 'DATA\Position\Y') + GetElementEditValues(r, 'DATA\Rotation\Z')) then
+    log.Add('updated ' + edid);
+  SetOrRemove(r, 'XSCL', Opt(opts, 'scale'));
+  SetOrRemove(r, 'XMSP', Opt(opts, 'swap'));
+  SetOrRemove(r, 'XRDS', Opt(opts, 'radius'));
+  touched.Add(edid);
   Remember(edid, r);
-  log.Add('placed ' + edid);
+end;
+
+// Delete this plugin's references in the cell whose editor IDs start with PREFIX and were not placed by this
+// run's ref operations (things taken out of the spec). Run it after the cell's last ref operation.
+procedure OpPrune(cellId, prefix: string);
+var
+  cell, r: IInterface;
+  i: integer;
+begin
+  cell := Rec(cellId);
+  if not Assigned(cell) then
+    Exit;
+  UseCell(InCur(cell));
+  for i := refIdx.Count - 1 downto 0 do
+    if (Copy(refIdx[i], 1, Length(prefix)) = prefix) and (touched.IndexOf(refIdx[i]) < 0) then begin
+      r := ObjectToElement(refIdx.Objects[i]);
+      log.Add('removed ' + refIdx[i]);
+      refIdx.Delete(i);
+      Remove(r);
+    end;
+end;
+
+// Records the spec no longer makes (a chest or terminal taken out of the layout). Run after the prune of the
+// references that placed them.
+procedure OpPruneRecords(prefix: string);
+var
+  i, k: integer;
+  r: IInterface;
+  sig, edid: string;
+begin
+  for i := RecordCount(cur) - 1 downto 0 do begin
+    r := RecordByIndex(cur, i);
+    if not (IsMaster(r) and Equals(GetFile(r), cur)) then
+      Continue;
+    sig := Signature(r);
+    edid := EditorID(r);
+    if (sig = 'REFR') or (sig = 'ACHR') or (sig = 'CELL') or (sig = 'NAVM') or (sig = 'WRLD') then
+      Continue;
+    if (Copy(edid, 1, Length(prefix)) <> prefix) or (made.IndexOf(edid) >= 0) then
+      Continue;
+    k := cache.IndexOf(edid);
+    if k >= 0 then
+      cache.Delete(k);
+    log.Add('removed record ' + sig + ' ' + edid);
+    Remove(r);
+  end;
 end;
 
 procedure OpUnref(edid, cellId: string);
@@ -487,6 +615,10 @@ begin
   // theirs (the CK rejects a quest VMAD without its fragment header).
   if Signature(r) <> 'QUST' then
     RemoveElement(ElementByPath(r, 'VMAD'), 'Script Fragments');
+  if not Assigned(ScriptEntry(r, scriptName)) then
+    Err(Format('%s: script %s was not attached (VMAD %s, %d scripts, record %s)', [edid, scriptName,
+      BoolToStr(Assigned(ElementByPath(r, 'VMAD')), True), ElementCount(ElementByPath(r, 'VMAD\Scripts')),
+      Name(r)]));
 end;
 
 procedure OpProp(edid, scriptName, propName, typ, v: string);
@@ -515,8 +647,11 @@ begin
     p := ElementAssign(props, HighInteger, nil, False);
   SetElementEditValues(p, 'propertyName', propName);
   SetElementEditValues(p, 'Type', typ);
-  if typ = 'Object' then
-    SetElementEditValues(p, 'Value\Object Union\Object v2\FormID', Value(v))
+  if typ = 'Object' then begin
+    SetElementEditValues(p, 'Value\Object Union\Object v2\FormID', Value(v));
+    if GetNativeValue(ElementByPath(p, 'Value\Object Union\Object v2\FormID')) = 0 then
+      Err(edid + '.' + propName + ': ' + v + ' did not resolve');
+  end
   else if typ = 'Array of Object' then begin
     arr := ElementByPath(p, 'Value\Array of Object');
     while ElementCount(arr) > 0 do
@@ -526,13 +661,78 @@ begin
     sl.StrictDelimiter := True;
     sl.DelimitedText := v;
     for i := 0 to sl.Count - 1 do begin
+      // the new element is the Object Union itself
       el := ElementAssign(arr, HighInteger, nil, False);
-      SetElementEditValues(el, 'Object Union\Object v2\FormID', Value(Trim(sl[i])));
+      SetElementEditValues(el, 'Object v2\FormID', Value(Trim(sl[i])));
+      if GetNativeValue(ElementByPath(el, 'Object v2\FormID')) = 0 then
+        Err(edid + '.' + propName + '[' + IntToStr(i) + ']: ' + Trim(sl[i]) + ' did not resolve');
     end;
     sl.Free;
   end
-  else
-    SetElementEditValues(p, 'Value\' + typ, v);
+  else begin
+    // a scalar's value sits directly on the property (Value = ...), not under a Value\<type> node
+    SetElementEditValues(p, 'Value', v);
+    if (typ <> 'String') and (StrToFloatDef(GetElementEditValues(p, 'Value'), -1e30) <> StrToFloatDef(v, 1e30))
+      and not SameText(GetElementEditValues(p, 'Value'), v) then
+      Err(Format('%s.%s: asked %s, got %s', [edid, propName, v, GetElementEditValues(p, 'Value')]));
+  end;
+end;
+
+// Give records whose object ID is past an ESL's 0xFFF a free ID inside the range, repointing everything that
+// refers to them. The Creation Kit numbers new navmeshes from its own counter (0x15D8 once), and Compact Active
+// File Form IDs does not always catch them; xEdit then refuses to save the ESL.
+function FirstOutOfRange(f: IInterface): IInterface;
+var
+  i: integer;
+  e: IInterface;
+begin
+  Result := nil;
+  for i := 0 to RecordCount(f) - 1 do begin
+    e := RecordByIndex(f, i);
+    if IsMaster(e) and Equals(GetFile(e), f) and ((FormID(e) and $FFFFFF) > $FFF) then begin
+      Result := e;
+      Exit;
+    end;
+  end;
+end;
+
+procedure FixOutOfRangeIDs(f: IInterface);
+var
+  i, j, id, free: integer;
+  e, user: IInterface;
+  used: TStringList;
+  oldID, newID: cardinal;
+begin
+  used := TStringList.Create;
+  used.Sorted := True;
+  for i := 0 to RecordCount(f) - 1 do begin
+    e := RecordByIndex(f, i);
+    if IsMaster(e) and Equals(GetFile(e), f) then
+      used.Add(IntToHex(FormID(e) and $FFFFFF, 6));
+  end;
+  free := $800;
+  // one at a time, rescanning: renumbering re-sorts the file's records, so indexes shift under a loop
+  e := FirstOutOfRange(f);
+  while Assigned(e) do begin
+    id := FormID(e) and $FFFFFF;
+    while used.IndexOf(IntToHex(free, 6)) >= 0 do
+      Inc(free);
+    if free > $FFF then begin
+      Err(GetFileName(f) + ': no free ESL object ID left for ' + Name(e));
+      Break;
+    end;
+    oldID := GetLoadOrderFormID(e);
+    newID := (oldID and $FFFFF000) or free;  // a light plugin keeps its slot in bits 12-23
+    for j := ReferencedByCount(e) - 1 downto 0 do begin
+      user := ReferencedByIndex(e, j);
+      CompareExchangeFormID(user, oldID, newID);
+    end;
+    SetLoadOrderFormID(e, newID);
+    used.Add(IntToHex(free, 6));
+    log.Add(Format('%s: renumbered %s [%x] to %x', [GetFileName(f), Signature(e), id, free]));
+    e := FirstOutOfRange(f);
+  end;
+  used.Free;
 end;
 
 // Point the header's next object ID just past the highest ID in use. The CK hands out new IDs from it, and an
@@ -565,6 +765,11 @@ begin
   nErr := 0;
   log := TStringList.Create;
   cache := TStringList.Create;
+  refIdx := TStringList.Create;
+  touched := TStringList.Create;
+  made := TStringList.Create;
+  touched.Sorted := True;
+  touched.Duplicates := dupIgnore;
   spec := TStringList.Create;
   spec.LoadFromFile(SpecFile);
   cur := FileByName(TargetFile);
@@ -581,6 +786,8 @@ begin
     else if op = 'remove' then OpRemove(Field(line, 1), Field(line, 2))
     else if op = 'ref' then OpRef(Field(line, 1), Field(line, 2), Field(line, 3), Field(line, 4), Field(line, 5), Field(line, 6))
     else if op = 'unref' then OpUnref(Field(line, 1), Field(line, 2))
+    else if op = 'prune' then OpPrune(Field(line, 1), Field(line, 2))
+    else if op = 'prunerecords' then OpPruneRecords(Field(line, 1))
     else if op = 'items' then OpItems(Field(line, 1), Field(line, 2))
     else if op = 'menuclear' then OpMenuClear(Field(line, 1))
     else if op = 'menu' then OpMenu(Field(line, 1), Field(line, 2), Field(line, 3), Field(line, 4), Field(line, 5))
@@ -594,8 +801,10 @@ begin
     end;
   end;
   for i := 0 to FileCount - 1 do
-    if Pos('Sandbox Room', GetFileName(FileByIndex(i))) = 1 then
+    if Pos('Sandbox Room', GetFileName(FileByIndex(i))) = 1 then begin
+      FixOutOfRangeIDs(FileByIndex(i));
       FixNextObjectID(FileByIndex(i));
+    end;
   log.Insert(0, Format('%d operations, %d errors', [nOk, nErr]));
   log.SaveToFile(OutDir + 'result.txt');
   done := TStringList.Create;

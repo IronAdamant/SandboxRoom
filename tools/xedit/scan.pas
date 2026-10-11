@@ -1,8 +1,9 @@
 {
   Sandbox Room: read-only scan of the official masters. Writes tab-separated lists the build tools pick from:
     items.tsv     every item record (WEAP ARMO AMMO ALCH MISC BOOK) with name, flags and keywords
-    world.tsv     FURN, STAT, TERM, LVLN, LGTM, CONT records with name, bounds and model
+    world.tsv     FURN, STAT, TERM, LVLN, LGTM, CONT, MSTT, LIGH, DOOR, ACTI records with name, bounds and model
     cells.tsv     interior cells with their flags and lighting template
+    omods.tsv     object mods (OMOD) with name, form type (Weapon/Armor) and description
 }
 unit SBRScan;
 
@@ -10,7 +11,7 @@ const
   OutDir = '{{OUT}}';
 
 var
-  items, world, cells: TStringList;
+  items, world, cells, omods: TStringList;
 
 function Clean(s: string): string;
 begin
@@ -61,8 +62,10 @@ begin
         IntToStr(ElementCount(ElementByPath(rec, 'CVPA'))) + #9 + GetElementEditValues(rec, 'BOD2\First Person Flags') + #9 +
         GetElementEditValues(rec, 'DATA\Value'))
     else if (sig = 'FURN') or (sig = 'STAT') or (sig = 'TERM') or (sig = 'LVLN') or (sig = 'LGTM') or (sig = 'CONT')
-      or (sig = 'MSTT') or (sig = 'LIGH') then
+      or (sig = 'MSTT') or (sig = 'LIGH') or (sig = 'DOOR') or (sig = 'ACTI') then
       world.Add(line + #9 + ObjBounds(rec) + #9 + GetElementEditValues(rec, 'Model\MODL') + #9 + Keywords(rec))
+    else if sig = 'OMOD' then
+      omods.Add(line + #9 + GetElementEditValues(rec, 'DATA\Form Type') + #9 + Clean(GetElementEditValues(rec, 'DESC')))
     else if sig = 'CELL' then
       cells.Add(line + #9 + GetElementEditValues(rec, 'DATA') + #9 + GetElementEditValues(rec, 'LTMP') + #9 +
         GetElementEditValues(rec, 'XCIM') + #9 + GetElementEditValues(rec, 'XCCM') + #9 +
@@ -81,6 +84,7 @@ begin
   items := TStringList.Create;
   world := TStringList.Create;
   cells := TStringList.Create;
+  omods := TStringList.Create;
   for i := 0 to FileCount - 1 do begin
     f := FileByIndex(i);
     if (Pos('.esm', LowerCase(GetFileName(f))) = 0) then
@@ -97,7 +101,7 @@ begin
         sig := 'CELL';
       if (sig = 'WEAP') or (sig = 'ARMO') or (sig = 'AMMO') or (sig = 'ALCH') or (sig = 'MISC') or (sig = 'BOOK')
         or (sig = 'FURN') or (sig = 'STAT') or (sig = 'TERM') or (sig = 'LVLN') or (sig = 'LGTM') or (sig = 'CONT')
-        or (sig = 'MSTT') or (sig = 'LIGH') or (sig = 'CELL') then
+        or (sig = 'MSTT') or (sig = 'LIGH') or (sig = 'DOOR') or (sig = 'ACTI') or (sig = 'CELL') or (sig = 'OMOD') then
       begin
         ScanGroup(f, g);
         progress.Add(GetFileName(f) + ' ' + sig);
@@ -108,6 +112,7 @@ begin
   items.SaveToFile(OutDir + 'items.tsv');
   world.SaveToFile(OutDir + 'world.tsv');
   cells.SaveToFile(OutDir + 'cells.tsv');
+  omods.SaveToFile(OutDir + 'omods.tsv');
   done := TStringList.Create;
   done.Add('ok');
   done.SaveToFile(OutDir + 'DONE.txt');
