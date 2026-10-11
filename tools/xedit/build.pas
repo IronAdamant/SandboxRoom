@@ -6,6 +6,8 @@
 
     file     | NAME                          select the plugin to work on; created (ESL-flagged) if not loaded
     master   | NAME                          add a master to the current plugin
+    header   | PATH | VALUE                  set a field of the current plugin's file header (CNAM author,
+                                             SNAM description)
     copy     | SOURCE | NEW_EDID             copy a record (any loaded plugin) into the current plugin as new
     new      | SIG | NEW_EDID                create an empty record
     set      | EDID | PATH | VALUE           set a field by xEdit path, adding missing parts on the way
@@ -460,6 +462,21 @@ begin
   end;
 end;
 
+procedure OpHeader(path, v: string);
+var
+  h, e: IInterface;
+begin
+  h := ElementByIndex(cur, 0);  // the file header (TES4)
+  e := ElementByPath(h, path);
+  if not Assigned(e) then
+    e := Add(h, path, True);
+  if not Assigned(e) then begin
+    Err('cannot add header field ' + path);
+    Exit;
+  end;
+  SetEditValue(e, StringReplace(v, '\n', #13#10, [rfReplaceAll]));
+end;
+
 procedure OpUnref(edid, cellId: string);
 var
   cell, r: IInterface;
@@ -780,6 +797,7 @@ begin
     op := Field(line, 0);
     if op = 'file' then OpFile(Field(line, 1))
     else if op = 'master' then AddMasterIfMissing(cur, Field(line, 1))
+    else if op = 'header' then OpHeader(Field(line, 1), Field(line, 2))
     else if op = 'copy' then OpCopy(Field(line, 1), Field(line, 2))
     else if op = 'new' then OpNew(Field(line, 1), Field(line, 2))
     else if op = 'set' then OpSet(Field(line, 1), Field(line, 2), Field(line, 3))

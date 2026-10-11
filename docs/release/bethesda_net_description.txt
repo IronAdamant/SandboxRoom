@@ -1,0 +1,21 @@
+SANDBOX ROOM - a clean, up-to-date testing facility, reached by holotape.
+
+A few seconds after you leave Vault 111 (or shortly after loading a save), the (Sandbox Room) Holotape is added to your inventory. Play it: Teleport In remembers where you are and takes you to the room; Teleport Out takes you back with everything you carry.
+
+MAIN HALL - a three-storey white lab with a ceiling and lights (no skybox).
+- Crafting stations: weapons, armour, chemistry, cooking, power armour station with three empty power armour frames.
+- Storage that never runs out: signed cabinets for Weapons & Ammo, Apparel, Mods, Power Armor, Aid and Miscellaneous. Whatever you take is put back.
+
+TARGET RANGE - four walled bays with holographic targets (humans, super mutants, deathclaws) that stand still, never fight back and give no XP. Terminals set the target, its health (default to 100,000) and armour (default or none). Killed targets come back a few seconds later. Shooting galleries at two heights.
+
+ARENA - pick an enemy, then how many (1 to 10). Enemies stay frozen while you're outside and wake up the moment you walk in. Rocks, mounds and dead trees, balconies at two heights, kill/remove everything spawned.
+
+Doors open by themselves. Enemies follow you up the stairs.
+
+PLAYING FAIR: everything in the room is free - save before you teleport in and reload if you don't want to keep what you took.
+
+DLC ADD-ONS (separate uploads/plugins, each needs its DLC): Automatron, Far Harbor, Nuka-World, Contraptions Workshop, Vault-Tec Workshop - their items in the cabinets, their enemies on an arena terminal, their crafting stations.
+
+Light plugin (ESL). Own interior cell; no vanilla records edited. No script extender needed.
+
+PlayStation: not possible - this mod relies on custom scripts and custom assets, which Sony's policy does not allow.

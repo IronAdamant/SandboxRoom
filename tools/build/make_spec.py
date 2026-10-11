@@ -28,6 +28,9 @@ SPEC = REPO / 'work' / 'spec.txt'
 SIGNS_JSON = REPO / 'work' / 'signs.json'
 
 MAIN = 'Sandbox Room.esp'
+AUTHOR = 'Deadmansprice'
+DESCRIPTION = ('Sandbox Room: a testing facility reached by holotape. Refilling storage, crafting stations, a target '
+               'range with holographic targets and an arena whose enemies wake when you walk in.')
 CELL = 'SandboxRoom'  # the CK drops underscores from cell editor IDs; also the coc name
 
 # The kit: Fallout 4's high-tech interior pieces (Mass Fusion) in the Institute's clean white finish. Everything sits
@@ -801,6 +804,8 @@ def storage(s: Spec, chests: dict):
 def main_plugin(s: Spec, chests: dict):
     s.file_op(MAIN)
     s.op('master', 'Fallout4.esm')
+    s.op('header', 'CNAM', AUTHOR)
+    s.op('header', 'SNAM', DESCRIPTION)
     hall(s)
     hall_galleries(s)
     target_range(s)
@@ -859,6 +864,10 @@ def dlc_plugin(s: Spec, d: Dlc, chests: dict):
     s.op('master', 'Fallout4.esm')
     s.op('master', d.master)
     s.op('master', MAIN)
+    s.op('header', 'CNAM', AUTHOR)
+    s.op('header', 'SNAM', f'Sandbox Room add-on for {d.title}: its items in the storage cabinets'
+                           + (', its enemies on an arena terminal' if d.spawns else '')
+                           + (', its crafting station' if d.stations else '') + '. Needs Sandbox Room.esp.')
     short = d.title.replace(' Workshop', '')
     s.comment(f'{d.title}: a cabinet in each storage section it has items for, its crafting station and spawns')
     for key, *_ in SECTIONS:

@@ -1,0 +1,101 @@
+[center][size=6][b]SANDBOX ROOM[/b][/size]
+[size=4]A clean, up-to-date testing facility for Fallout 4 - reached by holotape[/size][/center]
+
+[size=4][b]Why this exists[/b][/size]
+I couldn't find a decent, up-to-date sandbox or "cheater's room" that still works. QASmoke is painful to use (that sky...), and the similar mods I tried were either abandoned or broken by the next-gen update. So I made my own: one interior facility with everything you need to test weapons, armour, builds and enemies - and nothing that touches the rest of your game.
+
+[size=4][b]Getting there[/b][/size]
+A few seconds after you leave Vault 111 (or shortly after loading an existing save), the [b](Sandbox Room) Holotape[/b] is added to your inventory. Play it from the Pip-Boy:
+[list]
+[*][b]Teleport In[/b] - remembers exactly where you are and takes you to the Sandbox Room.
+[*][b]Teleport Out[/b] - takes you back to exactly where you were, with everything you are carrying.
+[/list]
+Console alternative: [font=Courier New]coc SandboxRoom[/font] (no return point that way).
+
+[size=4][b]Features[/b][/size]
+[b]The main hall[/b] - a three-storey lab in a clean white high-tech finish, with a proper ceiling and lighting. No skybox in sight.
+[list]
+[*][b]Crafting stations[/b]: weapons, armour, chemistry, cooking and a power armour station with three empty power armour frames beside it. (Robot workbench and Nuka-Mixer with the Automatron and Nuka-World add-ons.)
+[*][b]Storage that never runs out[/b]: signed sections of lab cabinets. Whatever you take is put straight back.
+[list]
+[*]Weapons & Ammo - Ballistic Guns, Energy Weapons, Heavy Weapons, Melee Weapons, Explosives, Ammo
+[*]Apparel - Armor, Clothing, Headwear, Dogmeat Gear
+[*]Mods - Weapon Mods, Armor Mods
+[*]Power Armor - Power Armor, Power Armor Mods (next to the power armour station)
+[*]Aid - Medicine and Chems, Food, Drinks
+[*]Miscellaneous - Junk (and caps), Magazines, Bobbleheads
+[*]Each DLC add-on adds its own labelled cabinet to every section it has items for.
+[/list]
+[/list]
+
+[b]Target range[/b] - a firing lane facing four bays walled off from each other, floor to ceiling.
+[list]
+[*][b]Holographic targets[/b]: blue hologram humans, super mutants and deathclaws that stand still, never fight back and give no XP.
+[*]Bays: Single target, Group of five (for area damage), Legendary target, and practice target stands.
+[*]Each bay's terminal sets the target type, its health (game default, 100, 1,000, 10,000 or 100,000) and its armour ([i]game default[/i], or [i]none[/i] so health equals exactly the damage it takes).
+[*]Killed targets come back a few seconds later, just beside where they stood.
+[*][b]Shooting galleries[/b] at two heights over the lane, with stairs, to test from above.
+[/list]
+
+[b]The Arena[/b] - through the door under the ARENA sign.
+[list]
+[*]A lobby of spawn terminals: Base Game, plus one each for Automatron, Far Harbor and Nuka-World with their add-ons.
+[*]Pick a group (Humans, Synths and Robots, Super Mutants, Creatures, Legendaries), pick an enemy, then pick how many: 1 to 10. Each lands at a random spot in the arena.
+[*]A large open space with rocks, mounds and dead trees - no buildings - and railed balconies at two heights to shoot from.
+[*][b]Enemies stay frozen while you are outside the arena and wake up the moment you walk in[/b] - and freeze again when you leave.
+[*]"Kill everything spawned" and "Remove everything spawned" clean up.
+[/list]
+
+Doors open by themselves as you walk up to them. Enemies can follow you up the stairs.
+
+[size=4][b]Playing fair[/b][/size]
+Everything in the room is free. Whether you keep it is up to you: save before you teleport in, and load that save if you don't want to keep what you took.
+
+[size=4][b]Requirements[/b][/size]
+[list]
+[*]Fallout 4 (current next-gen version).
+[*][b]No F4SE needed.[/b]
+[*]DLC are optional: the add-ons only add that DLC's items, enemies and stations.
+[/list]
+
+[size=4][b]Installation[/b][/size]
+[b]Mod manager (recommended)[/b]: install with Vortex or Mod Organizer 2. The installer always installs the core files and pre-ticks the add-ons for the DLC you have.
+[b]Manual[/b]: copy the files from [i]Core[/i] into your Fallout 4 [i]Data[/i] folder, plus the plugin from each [i]Add-ons[/i] folder for the DLC you own. Enable the plugins in your mod manager or in-game Mods menu.
+
+[b]Never install an add-on for a DLC you don't own[/b] - it needs that DLC.
+
+[size=4][b]Files[/b][/size]
+[list]
+[*][b]Sandbox Room.esp[/b] + [b]Sandbox Room - Main.ba2[/b] + [b]Sandbox Room - Textures.ba2[/b] - the mod.
+[*][b]Sandbox Room - Automatron.esp[/b], [b]- Far Harbor.esp[/b], [b]- Nuka-World.esp[/b], [b]- Contraptions Workshop.esp[/b], [b]- Vault-Tec Workshop.esp[/b] - optional DLC add-ons.
+[/list]
+All plugins are ESL-flagged (light plugins): they don't use up a load order slot.
+
+[size=4][b]Compatibility[/b][/size]
+[list]
+[*]Everything happens in its own new interior cell. The mod does not edit any vanilla records, except the navmesh info map that every mod adding a navmesh has to touch.
+[*]Load order: anywhere. The add-ons load after Sandbox Room.esp by themselves.
+[*]Safe to add to an existing save.
+[/list]
+
+[size=4][b]Uninstalling[/b][/size]
+Teleport out first, and use "Remove everything spawned" on the arena terminals if you spawned anything. Then remove the files. As with any scripted mod, uninstalling mid-playthrough is at your own risk - keep a save from before you installed it.
+
+[size=4][b]Consoles[/b][/size]
+[list]
+[*][b]Xbox[/b]: available on Bethesda.net (Creations).
+[*][b]PlayStation 4 / PlayStation 5[/b]: sorry - I cannot upload a version that works. This mod relies on multiple custom scripts (refilling cabinets, doors, spawn terminals, the arena's wake/freeze, the target bays, the holotape) and custom sign assets, and Sony's policy does not allow mods to include their own scripts or assets. A PlayStation version would just be an empty building.
+[/list]
+
+[size=4][b]Known notes[/b][/size]
+[list]
+[*]Legendary targets in the target range are the game's own legendary enemies, so they do give XP.
+[*]Enemies you spawn in the arena stay until you kill or remove them.
+[/list]
+
+[size=4][b]Credits[/b][/size]
+[list]
+[*]Bethesda - Fallout 4 and the Creation Kit.
+[*]The xEdit (FO4Edit) team.
+[*]Built with the help of Claude (Anthropic) - the layout, scripts and build tools were made together over a lot of in-game testing.
+[/list]

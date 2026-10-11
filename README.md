@@ -73,6 +73,8 @@ Also ships: scripts `Scripts/SandboxRoom/*.pex` (no F4SE needed) and the signs
 - `tools/build/signs.py` - makes the signs make_spec lists (`work/signs.json`): a vanilla poster model resized
   and remapped to a texture rendered with the sign's text, and its material. Installs them into `Data`.
 - `tools/build/build.py` - spec + signs + FO4Edit run + copy to `data/`.
+- `tools/build/package.py --version X.Y.Z` - a release in `dist/`: the BA2 archives for PC and Xbox, and the Nexus
+  zip (FOMOD). Release texts and the Bethesda.net steps are in `docs/release/`.
 - `tools/build/compile.py` - compiles the scripts with the Creation Kit's Papyrus compiler (`--debug` keeps
   `Debug.Trace` lines, which release builds strip).
 - `tools/build/papyrus_log.py on|off` - switches the game's Papyrus log on or off in `Fallout4Custom.ini`.

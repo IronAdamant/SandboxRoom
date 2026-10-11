@@ -2,3 +2,4 @@
 work/
 config.local.*
 __pycache__/
+/dist/
