@@ -37,9 +37,11 @@ ceiling lights.
 - What the lobby terminals spawn lands at random spots across the arena with full AI, but stays frozen while you
   are outside the arena and wakes up as soon as you step through a door (and freezes again when you leave).
 
-**Holotape**, added to your inventory once you leave Vault 111 (or right away on an existing save):
-*Teleport In* saves your exact position and takes you to the room; inside, it offers *Teleport Out* instead,
-which returns you there. Console: `coc SandboxRoom`.
+**(Sandbox Room) Holotape**, added to your inventory once you leave Vault 111 (or right away on an existing
+save): *Teleport In* saves your exact position and takes you to the room; inside, it offers *Teleport Out*
+instead, which returns you there with everything you carry. Everything in the room is free; playing fair is up
+to you (save before teleporting in, and load that save if you don't want to keep what you took). Console:
+`coc SandboxRoom`.
 
 ## Plugins
 

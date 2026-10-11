@@ -364,6 +364,14 @@ STATIONS = [('@workbenchWeaponsA', -1150), ('@WorkbenchArmorA', -850), ('@Workbe
 
 MENU_REMOVE_ALL, MENU_KILL_ALL = 900, 901
 
+# The holotape's header: what it does, and the honour system for whatever is taken from the room.
+HOLOTAPE_WELCOME = (
+    'SANDBOX ROOM\n'
+    'TELEPORT IN: saves where you are and takes you to the Sandbox Room.\n'
+    'TELEPORT OUT: takes you back to exactly where you were, with everything you are carrying.\n'
+    'Everything in the room is free and never runs out. Playing fair is up to you: save before you teleport in, '
+    'and load that save if you do not want to keep what you took.')
+
 SIGNS: dict = {}  # model name -> text, kind and size; written to work/signs.json for signs.py
 
 
@@ -791,20 +799,21 @@ def main_plugin(s: Spec, chests: dict):
     s.op('set', 'SBR_ReturnSaved', 'FNAM', 'Short')
     s.op('set', 'SBR_ReturnSaved', 'FLTV', '0')
 
-    s.terminal('SBR_HolotapeTerminal', 'Sandbox Room', 'SANDBOX ROOM')
+    s.comment('the holotape: teleport in (remembering where the player was) and back out')
+    s.terminal('SBR_HolotapeTerminal', 'Sandbox Room', HOLOTAPE_WELCOME)
     s.op('menu', 'SBR_HolotapeTerminal', 1, 'Teleport In', '-', f'GetInCell:@{CELL}:0')
     s.op('menu', 'SBR_HolotapeTerminal', 2, 'Teleport Out', '-', f'GetInCell:@{CELL}:1')
+
+    s.op('new', 'NOTE', 'SBR_Holotape')
+    for path, value in (('OBND\\X1', '-3'), ('OBND\\Y1', '-3'), ('OBND\\X2', '3'), ('OBND\\Y2', '3'),
+                        ('OBND\\Z2', '1'), ('PTRN', '@MiscHolotape'), ('FULL', '(Sandbox Room) Holotape'),
+                        ('Model\\MODL', 'Props\\Holotape_Prop.nif'), ('YNAM', '@ITMHolotapeUp'),
+                        ('ZNAM', '@ITMHolotapeDown'), ('DNAM', 'Terminal'), ('SNAM\\Terminal', '@SBR_HolotapeTerminal')):
+        s.op('set', 'SBR_Holotape', path, value)
     s.op('script', 'SBR_HolotapeTerminal', 'SandboxRoom:HolotapeScript')
     for prop, value in (('SBR_EntryMarker', '@SBR_EntryMarker'), ('SBR_ReturnMarker', '@SBR_ReturnMarker'),
                         ('SBR_ReturnSaved', '@SBR_ReturnSaved')):
         s.op('prop', 'SBR_HolotapeTerminal', 'SandboxRoom:HolotapeScript', prop, 'Object', value)
-
-    s.op('new', 'NOTE', 'SBR_Holotape')
-    for path, value in (('OBND\\X1', '-3'), ('OBND\\Y1', '-3'), ('OBND\\X2', '3'), ('OBND\\Y2', '3'),
-                        ('OBND\\Z2', '1'), ('PTRN', '@MiscHolotape'), ('FULL', 'Sandbox Room Holotape'),
-                        ('Model\\MODL', 'Props\\Holotape_Prop.nif'), ('YNAM', '@ITMHolotapeUp'),
-                        ('ZNAM', '@ITMHolotapeDown'), ('DNAM', 'Terminal'), ('SNAM\\Terminal', '@SBR_HolotapeTerminal')):
-        s.op('set', 'SBR_Holotape', path, value)
 
     s.op('new', 'QUST', 'SBR_Main')
     s.op('set', 'SBR_Main', 'FULL', 'Sandbox Room')
