@@ -36,6 +36,7 @@ CELL = 'SandboxRoom'  # the CK drops underscores from cell editor IDs; also the 
 G = 256
 WALL_TIERS = ('Mid02', 'Mid', 'Top')
 WALL_TOP, H1, H2 = 752, 256, 512           # ceiling height, gallery decks at storeys 1 and 2
+STAIRS_TOP_END = 64                        # HitExtIntStairs1Story01: its top platform (z 256) ends at local y 64
 SWAP = 'swap=@HitInstituteThemeSwap01'
 FLOOR_BASE = '@HitFloorSolidFull01'
 LIGHT_BASE, LIGHT_RADIUS = '@InstituteLightWhite01NS', 1100
@@ -45,6 +46,7 @@ LIGHT_BASE, LIGHT_RADIUS = '@InstituteLightWhite01NS', 1100
 X0, X1, Y0, Y1 = -1536, 4608, -1024, 1024
 ARENA_X, LANE_X, BAY_X = 1024, 2560, 3072
 HALL_DOOR_X = 640                          # the door in the hall's south wall, to the lobby
+DOOR_SILL_LIFT = 1                         # doorway wall pieces sit this far up, see wall_ring()
 
 # The wing: lobby (terminals), then the AI arena through a door on each side of them.
 LX0, LX1, LY0, LY1 = -256, 1536, -1536, -1024
@@ -58,7 +60,7 @@ ARENA_SPAWNS = [(0, -2700), (1500, -2550), (3000, -2700), (600, -3700), (2300, -
                 (-700, -3500), (1500, -4500), (2900, -4800)]
 # (base, x, y, z, rotation): mounds, outcrops, boulders and dead trees; the spawn points stay in the open
 TERRAIN = [
-    ('RockCliff07', -1300, -5300, -300, 45), ('DirtSlope01_ForestFloor', 4100, -5200, -250, 200),
+    ('RockCliff07', -1300, -5300, -300, 45), ('QryMoundRocksTall03dirtyALL', 4100, -5200, -40, 200),
     ('QryMoundLargeGravel01dirtyALL', 1400, -5250, -60, 10), ('QryMoundRocksTall01dirtyALL', -200, -4600, -40, 0),
     ('QryMoundRocksTall03dirtyALL', 4000, -3000, -40, 90), ('QryMoundRocksMed01dirtyALL', 800, -3000, 0, 30),
     ('QryMoundRocksMed03dirtyALL', 2600, -3100, 0, 120), ('QryMoundRocksLow01dirtyALL', -1000, -2500, 0, 0),
@@ -277,7 +279,7 @@ class Dlc:
 
 DLCS = [
     Dlc('Automatron', 'Automatron', 'DLCRobot.esm', AI_TERMINAL_X + 220,
-        stations=[('@WorkbenchRobot', 100, FACE_NORTH)],  # this one's working side is its local +Y
+        stations=[('@WorkbenchRobot', 100, FACE_SOUTH)],
         spawns=[('Rust Devil robot', 'DLC01LCharBotRaiderBot_Random'),
                 ('Rust Devil assaultron', 'DLC01LCharBotRaiderAssaultron'),
                 ('Rust Devil sentry bot', 'DLC01LCharBotRaiderSentry'),
@@ -357,12 +359,15 @@ SPAWN_MENUS = {
                     ('Legendary yao guai', 'LCharYaoGuaiLegendary')],
 }
 
-# Base game crafting stations along the north wall: (base, x). The Automatron robot workbench (add-on) goes at 100,
-# the power armor frames beside the power armor station.
-STATIONS = [('@workbenchWeaponsA', -1150), ('@WorkbenchArmorA', -850), ('@WorkbenchChemistryA', -550),
-            ('@WorkbenchCookingStove', -250), ('@WorkbenchPowerArmor', 450)]
+# Base game crafting stations along the north wall, facing into the room: (base, x, rotation). The Automatron
+# robot workbench (add-on) goes at 100, the power armor frames beside the power armor station. The power armor
+# station's working side is its local +Y, so it turns the other way from the rest (checked in game).
+STATIONS = [('@workbenchWeaponsA', -1150, FACE_SOUTH), ('@WorkbenchArmorA', -850, FACE_SOUTH),
+            ('@WorkbenchChemistryA', -550, FACE_SOUTH), ('@WorkbenchCookingStove', -250, FACE_SOUTH),
+            ('@WorkbenchPowerArmor', 450, FACE_NORTH)]
 
 MENU_REMOVE_ALL, MENU_KILL_ALL = 900, 901
+SPAWN_COUNT_MAX = 10                       # arena "how many" menus offer 1 to this many (SpawnTerminalScript.MaxCount)
 
 # The holotape's header: what it does, and the honour system for whatever is taken from the room.
 HOLOTAPE_WELCOME = (
@@ -429,7 +434,8 @@ class Spec:
         self.op('set', edid, 'FULL', name)
         self.op('set', edid, 'WNAM', welcome.replace('\n', '\\n'))  # one spec line per operation
 
-    def spawn_script(self, edid, spawns=(), ai_arena=False):
+    def spawn_script(self, edid, spawns=(), ai_arena=False, count_spawn=''):
+        """count_spawn: a "how many" menu for this leveled list (items 1 to SPAWN_COUNT_MAX spawn that many)."""
         sc = 'SandboxRoom:SpawnTerminalScript'
         self.op('script', edid, sc)
         self.op('prop', edid, sc, 'SBR_ArenaMarker', 'Object', '@SBR_ArenaMarker')
@@ -438,6 +444,10 @@ class Spec:
             self.op('prop', edid, sc, 'SpawnPoints', 'Array of Object',
                     ','.join(f'@SBR_ArenaSpawn{k}' for k in range(len(ARENA_SPAWNS))))
             self.op('prop', edid, sc, 'Zone', 'Object', '@SBR_ArenaZone')
+        if count_spawn:
+            self.op('prop', edid, sc, 'CountSpawn', 'Object', '@' + count_spawn)
+            for n in range(1, SPAWN_COUNT_MAX + 1):
+                self.op('menu', edid, n, f'Spawn {n}', '-', '-')
         if spawns:
             self.op('prop', edid, sc, 'Spawns', 'Array of Object',
                     ','.join('@' + lvln for _, lvln in spawns))
@@ -459,7 +469,10 @@ def wall_ring(s: Spec, prefix: str, x0: int, x1: int, y0: int, y1: int, doors: d
             opening = (x if side in 'NS' else y) in doors.get(side, ())
             for tier in WALL_TIERS:
                 piece = 'WallExLg01' if opening and tier == 'Mid02' else 'Wall01'
-                s.ref(f'{prefix}{side}{k}_{tier}', f'@HitLgRm{tier}{piece}', x, y, rz=rz, opts=SWAP)
+                # the door opening's sill lies at floor height and flickers against the floor (z-fighting): lift
+                # the piece a unit; its top tucks into the storey above
+                z = DOOR_SILL_LIFT if piece == 'WallExLg01' else 0
+                s.ref(f'{prefix}{side}{k}_{tier}', f'@HitLgRm{tier}{piece}', x, y, z, rz=rz, opts=SWAP)
     corners = {'NW': (xs[0], ys[-1], 0), 'NE': (xs[-1], ys[-1], 90), 'SE': (xs[-1], ys[0], 180),
                'SW': (xs[0], ys[0], 270)}
     for name, (x, y, rz) in corners.items():
@@ -526,10 +539,13 @@ def deck(s: Spec, prefix: str, cells: list, z: int, rails: list):
 
 
 def stairs(s: Spec, edid: str, top_x: int, top_y: int, z: int, climbs: str):
-    """One storey of lobby stairs whose top step meets a deck edge at (top_x, top_y), height z; climbs: the
-    compass direction of the climb (the piece climbs towards its local +Y)."""
+    """One storey of lobby stairs whose top meets a deck edge at (top_x, top_y), height z; climbs: the compass
+    direction of the climb (the piece climbs towards its local +Y). Measured from its model: steps of about 23
+    up and 28 along, the last one at local y 5..32 and z 233, then the top platform at z 256 from y 33 to
+    STAIRS_TOP_END. So the piece goes STAIRS_TOP_END back from the edge: its platform ends flush with the deck."""
     rz = {'N': 0, 'E': 90, 'S': 180, 'W': 270}[climbs]
-    s.ref(edid, '@HitExtIntStairs1Story01', top_x, top_y, z, rz=rz)
+    dx, dy = {'N': (0, 1), 'E': (1, 0), 'S': (0, -1), 'W': (-1, 0)}[climbs]
+    s.ref(edid, '@HitExtIntStairs1Story01', top_x - dx * STAIRS_TOP_END, top_y - dy * STAIRS_TOP_END, z, rz=rz)
 
 
 def cells(x0: int, x1: int, y0: int, y1: int) -> list:
@@ -755,8 +771,12 @@ def spawn_terminal(s: Spec, prefix: str, title: str, welcome: str, menus: dict, 
     s.terminal(top, title, f'{title.upper()}\n{welcome}')
     for n, (group, spawns) in enumerate(menus.items(), 1):
         sub = prefix + 'Menu_' + key_of(group)
-        s.terminal(sub, title, f'{title.upper()}\n{group}')
-        s.spawn_script(sub, spawns, True)
+        s.terminal(sub, title, f'{title.upper()}\n{group}: pick an enemy, then how many.')
+        for i, (enemy, lvln) in enumerate(spawns, 1):
+            count = prefix + 'Count_' + key_of(enemy)
+            s.terminal(count, title, f'{title.upper()}\n{enemy}: how many? Each lands at a random spot in the arena.')
+            s.spawn_script(count, (), True, lvln)
+            s.op('menu', sub, i, enemy, '@' + count, '-')
         s.op('menu', top, n, group, '@' + sub, '-')
     s.op('menu', top, MENU_KILL_ALL, 'Kill everything spawned', '-', '-')
     s.op('menu', top, MENU_REMOVE_ALL, 'Remove everything spawned', '-', '-')
@@ -787,8 +807,8 @@ def main_plugin(s: Spec, chests: dict):
     wing(s)
 
     s.comment('crafting stations (north wall, facing into the room), the power armor frames by their station')
-    for n, (base, x) in enumerate(STATIONS):
-        s.ref(f'SBR_Station_{n}', base, x, Y1 - 200, rz=FACE_SOUTH)
+    for n, (base, x, rz) in enumerate(STATIONS):
+        s.ref(f'SBR_Station_{n}', base, x, Y1 - 200, rz=rz)
     for n, x in enumerate(PA_FRAMES_X):
         s.ref(f'SBR_PowerArmorFrame_{n}', '@PowerArmorFrameFurnitureNoCore', x, Y1 - 190, rz=FACE_SOUTH)
 

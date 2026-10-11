@@ -34,7 +34,7 @@ ceiling lights.
   walk up to them.
 - The arena: dirt ground, mounds, rock outcrops, boulders and dead trees; no buildings. Railed balconies at
   storeys 1 and 2 along its north wall.
-- What the lobby terminals spawn lands at random spots across the arena with full AI, but stays frozen while you
+- Pick an enemy on a lobby terminal, then how many (1 to 10). Each one lands at a random spot across the arena with full AI, but stays frozen while you
   are outside the arena and wakes up as soon as you step through a door (and freezes again when you leave).
 
 **(Sandbox Room) Holotape**, added to your inventory once you leave Vault 111 (or right away on an existing
