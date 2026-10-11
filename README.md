@@ -5,8 +5,8 @@ the game's high-tech (Mass Fusion) kit in the Institute's clean white finish, th
 ceiling lights.
 
 **Main hall**
-- **Crafting stations** along the north wall: weapons, armor, chemistry, cooking, power armor with **three empty
-  power armor frames** beside it (plus the robot workbench and Nuka-Mixer with their DLC add-ons).
+- **Crafting stations** along the north wall: weapons, armor, chemistry, cooking, the Automatron robot workbench,
+  the Nuka-World Nuka-Mixer, and power armor with **three empty power armor frames** beside it.
 - **Storage**: signed sections of lab filing cabinets along the walls, each with a header sign, an Institute
   shelf and a label on every cabinet. The cabinets never run out: whatever you take is put straight back.
   - Weapons & Ammo: Ballistic Guns, Energy Weapons, Heavy Weapons, Melee Weapons, Explosives, Ammo
@@ -15,7 +15,8 @@ ceiling lights.
   - Power Armor (by the power armor station): Power Armor, Power Armor Mods
   - Aid: Medicine and Chems, Food, Drinks
   - Miscellaneous: Junk (with caps), Magazines, Bobbleheads
-  - Each DLC add-on puts one cabinet per section it has items for into that section.
+  - Each DLC (Automatron, Far Harbor, Nuka-World, Contraptions, Vault-Tec) has a labelled cabinet in every
+    section it has items for.
 - **Target range** at the east end: a firing lane facing four bays walled off from each other, floor to ceiling,
   to contain blasts, with TARGET RANGE on the lane floor. Targets are holograms (the game's hologram effect),
   stand still (AI off) and come back 3 seconds after dying. Each bay's terminal picks the enemy (hologram human,
@@ -29,8 +30,8 @@ ceiling lights.
   hall. Stairs up from the hall side.
 
 **Arena** (through the door under the ARENA sign in the hall's south wall)
-- A lobby with the arena terminals in a labelled row (base game, then one per DLC add-on, each with an
-  Enemies and a Legendaries submenu), and a door on each side of them into the arena. The doors open as you
+- A lobby with the arena terminals in a labelled row (base game, Automatron, Far Harbor, Nuka-World; the DLC
+  ones with an Enemies and a Legendaries submenu), and a door on each side of them into the arena. The doors open as you
   walk up to them.
 - The arena: dirt ground, mounds, rock outcrops, boulders and dead trees; no buildings. Railed balconies at
   storeys 1 and 2 along its north wall.
@@ -43,28 +44,20 @@ instead, which returns you there with everything you carry. Everything in the ro
 to you (save before teleporting in, and load that save if you don't want to keep what you took). Console:
 `coc SandboxRoom`.
 
-## Plugins
+## Plugin
 
-All are ESL-flagged (no load-order slot). Install the main plugin, then the add-ons for the DLC you own.
+One ESL-flagged plugin, `Sandbox Room.esp` (no load-order slot). It requires Fallout 4 and five DLC: Automatron,
+Far Harbor, Nuka-World, Contraptions Workshop and Vault-Tec Workshop (not Wasteland Workshop). Until 1.0 each DLC
+had its own add-on plugin; the DLC content is now part of the main plugin (`make_spec.DLC_MASTERS`).
 
-| Plugin | Needs | Adds |
-|---|---|---|
-| `Sandbox Room.esp` | Fallout 4 | the hall, arena, stations, storage, target range, arena terminal, holotape |
-| `Sandbox Room - Automatron.esp` | Automatron | DLC cabinets, robot workbench, arena terminal |
-| `Sandbox Room - Far Harbor.esp` | Far Harbor | DLC cabinets, arena terminal |
-| `Sandbox Room - Nuka-World.esp` | Nuka-World | DLC cabinets, Nuka-Mixer station, arena terminal |
-| `Sandbox Room - Contraptions Workshop.esp` | Contraptions Workshop | DLC cabinets |
-| `Sandbox Room - Vault-Tec Workshop.esp` | Vault-Tec Workshop | DLC cabinets |
-
-Also ships: scripts `Scripts/SandboxRoom/*.pex` (no F4SE needed) and the signs
-(`Meshes|Materials|Textures/SandboxRoom/Signs`).
+Also ships, packed in `Sandbox Room - Main.ba2` / `- Textures.ba2`: the scripts (no F4SE needed) and the signs.
 
 ## Layout
 
 - `data/` - what ships, laid out like the game's `Data` folder.
 - `source/User/SandboxRoom/` - Papyrus sources.
 - `tools/xedit/scan.pas` - read-only scan of the official masters (items, workbenches, creature lists).
-- `tools/build/make_spec.py` - **the design**: room layout, chest contents, spawn lists, DLC add-ons. Generates
+- `tools/build/make_spec.py` - **the design**: room layout, chest contents, spawn lists, DLC content. Generates
   `work/spec.txt`.
 - `tools/xedit/build.pas` - applies the spec with FO4Edit. Re-runnable: records and placed objects are found by
   editor ID and only created when missing. The spec is the source of truth for the layout: every build puts each
@@ -73,8 +66,9 @@ Also ships: scripts `Scripts/SandboxRoom/*.pex` (no F4SE needed) and the signs
 - `tools/build/signs.py` - makes the signs make_spec lists (`work/signs.json`): a vanilla poster model resized
   and remapped to a texture rendered with the sign's text, and its material. Installs them into `Data`.
 - `tools/build/build.py` - spec + signs + FO4Edit run + copy to `data/`.
-- `tools/build/package.py --version X.Y.Z` - a release in `dist/`: the BA2 archives for PC and Xbox, and the Nexus
-  zip (FOMOD). Release texts and the Bethesda.net steps are in `docs/release/`.
+- `tools/build/package.py --version X.Y.Z` - a release in `dist/`: the BA2 archives for PC and Xbox (`_xbox`
+  names, as the Creation Kit's upload expects), and the Nexus zip. Release texts and the Bethesda.net steps are in
+  `docs/release/`.
 - `tools/build/compile.py` - compiles the scripts with the Creation Kit's Papyrus compiler (`--debug` keeps
   `Debug.Trace` lines, which release builds strip).
 - `tools/build/papyrus_log.py on|off` - switches the game's Papyrus log on or off in `Fallout4Custom.ini`.
@@ -91,9 +85,9 @@ python tools/build/compile.py --game "D:/Steam/steamapps/common/Fallout 4"
 python tools/build/build.py --ack "D:/Coding Projects/AgentCreationKit"
 ```
 
-**Only save `Sandbox Room.esp` in the Creation Kit with nothing but it loaded** (its masters load on their own).
-Saved with the add-ons loaded, its navmesh index picks up the DLC as masters; `build.py` refuses to finish if any
-plugin has unexpected masters.
+**Only save `Sandbox Room.esp` in the Creation Kit with nothing but it loaded** (its masters load on their own),
+and close the Creation Kit before building: `build.py` refuses to run while it is open, and refuses to finish if
+the plugin has masters other than Fallout 4 and the five DLC.
 
 The navmesh is made in the Creation Kit (NavMesh > Generation > Recast, then Finalize Cell NavMeshes) with
 `Sandbox Room.esp` as the active file. After any Creation Kit save, re-run `build.py`: it also resets the header's

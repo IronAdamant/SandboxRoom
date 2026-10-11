@@ -31,7 +31,7 @@ def main():
     signs.install(signs.build(a.ack, Path(a.game)), Path(a.game))
     print('signs made and installed')
     data = Path(a.game) / 'Data'
-    addons = [f'Sandbox Room - {d.title}.esp' for d in make_spec.DLCS]
+    addons = []  # one plugin since 1.0: the DLC content is in Sandbox Room.esp
     cmd = [sys.executable, '-m', 'ack', 'xedit', 'run', str(REPO / 'tools' / 'xedit' / 'build.pas'), make_spec.MAIN,
            '--save', '--timeout', '900', '--param', f'SPEC={make_spec.SPEC}']
     for name in addons:
@@ -62,13 +62,10 @@ def refuse_if_ck_running() -> None:
 
 
 def check_masters(data: Path) -> None:
-    """Each plugin may only need Fallout 4, its own DLC and the main plugin. Saving the main plugin in the
-    Creation Kit while the add-ons (and so the DLC) are loaded makes its navmesh index (NAVI) pick up DLC entries
-    and DLC masters, which would make the base plugin require every DLC."""
+    """The plugin needs exactly Fallout 4 and the DLC in DLC_MASTERS, in load order: nothing else (a Creation Kit
+    save with other plugins loaded can add masters through the navmesh index, NAVI)."""
     from ack.plugin import Plugin
-    allowed = {make_spec.MAIN: ['Fallout4.esm']}
-    for d in make_spec.DLCS:
-        allowed[f'Sandbox Room - {d.title}.esp'] = ['Fallout4.esm', d.master, make_spec.MAIN]
+    allowed = {make_spec.MAIN: ['Fallout4.esm'] + make_spec.DLC_MASTERS}
     for name, masters in allowed.items():
         got = Plugin.load(data / name).masters
         if got != masters:

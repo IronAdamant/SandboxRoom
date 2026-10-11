@@ -1,17 +1,17 @@
-"""Package a release: BA2 archives for PC and Xbox, and the Nexus zip (a FOMOD installer).
+"""Package a release: BA2 archives for PC and Xbox, and the Nexus zip.
 
     python tools/build/package.py --version 1.0.0 [--game "D:/Steam/steamapps/common/Fallout 4"]
 
 Fallout 4 loads "<plugin> - Main.ba2" and "<plugin> - Textures.ba2" beside a plugin by themselves, so every loose
-file the mod needs goes into the main plugin's two archives (the DLC add-ons use the same scripts and signs, so
-they need none of their own):
+file the mod needs goes into the plugin's two archives:
     Sandbox Room - Main.ba2      Scripts (compiled, plus sources), sign models and materials   (General)
     Sandbox Room - Textures.ba2  sign textures                                                 (DDS)
+The Creation Kit's Bethesda.net upload looks for the Xbox versions as "<plugin> - Main_xbox.ba2" and
+"- Textures_xbox.ba2" (XBoxDDS textures, Xbox compression).
 Output in dist/:
-    PC/      the plugins and the PC archives: what Bethesda.net's PC upload takes
-    Xbox/    the plugins and the Xbox archives (XBoxDDS textures, Xbox compression)
-    Sandbox Room <version>.zip   for Nexus: a FOMOD that installs the core files and ticks the add-ons of the DLC
-                                 the player has
+    PC/      Sandbox Room.esp + the PC archives          (Bethesda.net PC upload)
+    Xbox/    Sandbox Room.esp + the _xbox archives       (Bethesda.net Xbox upload: copy beside the plugin in Data)
+    Sandbox Room <version>.zip   for Nexus: the plugin, the PC archives and the readme, laid out as Data
 """
 from __future__ import annotations
 
@@ -25,8 +25,6 @@ REPO = Path(__file__).resolve().parents[2]
 DATA = REPO / 'data'
 DIST = REPO / 'dist'
 MAIN = 'Sandbox Room.esp'
-ADDONS = [('Automatron', 'DLCRobot.esm'), ('Far Harbor', 'DLCCoast.esm'), ('Nuka-World', 'DLCNukaWorld.esm'),
-          ('Contraptions Workshop', 'DLCworkshop02.esm'), ('Vault-Tec Workshop', 'DLCworkshop03.esm')]
 
 
 def stage(tmp: Path) -> Path:
@@ -48,52 +46,6 @@ def archive2(game: Path, root: Path, folders: list[str], out: Path, fmt: str, co
         raise SystemExit(f'Archive2 failed for {out.name}:\n{r.stdout}\n{r.stderr}')
 
 
-def fomod(version: str) -> tuple[str, str]:
-    info = f"""<fomod>
-  <Name>Sandbox Room</Name>
-  <Author>Deadmansprice</Author>
-  <Version>{version}</Version>
-  <Description>A testing facility reached by holotape: refilling storage, crafting stations, a target range with holographic targets and an arena whose enemies wake when you walk in.</Description>
-  <Groups><element>Gameplay</element></Groups>
-</fomod>
-"""
-    plugins = []
-    for title, master in ADDONS:
-        plugins.append(f"""          <plugin name="{title}">
-            <description>Adds {title}'s items to the storage cabinets (and its enemies, station or both where it has them). Needs the {title} DLC.</description>
-            <files><folder source="Add-ons\\{title}" destination="" priority="0"/></files>
-            <typeDescriptor>
-              <dependencyType>
-                <defaultType name="Optional"/>
-                <patterns>
-                  <pattern><dependencies operator="And"><fileDependency file="{master}" state="Active"/></dependencies><type name="Recommended"/></pattern>
-                  <pattern><dependencies operator="And"><fileDependency file="{master}" state="Missing"/></dependencies><type name="NotUsable"/></pattern>
-                </patterns>
-              </dependencyType>
-            </typeDescriptor>
-          </plugin>""")
-    config = f"""<?xml version="1.0" encoding="UTF-8"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
-  <moduleName>Sandbox Room</moduleName>
-  <requiredInstallFiles>
-    <folder source="Core" destination=""/>
-  </requiredInstallFiles>
-  <installSteps order="Explicit">
-    <installStep name="DLC add-ons">
-      <optionalFileGroups order="Explicit">
-        <group name="Add-ons for the DLC you own (each needs its DLC)" type="SelectAny">
-          <plugins order="Explicit">
-{chr(10).join(plugins)}
-          </plugins>
-        </group>
-      </optionalFileGroups>
-    </installStep>
-  </installSteps>
-</config>
-"""
-    return info, config
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--version', required=True)
@@ -104,25 +56,16 @@ def main():
         shutil.rmtree(DIST)
     tmp = DIST / '_stage'
     root = stage(tmp)
-    plugins = [MAIN] + [f'Sandbox Room - {t}.esp' for t, _ in ADDONS]
-    for platform, tex_fmt, comp in (('PC', 'DDS', 'Default'), ('Xbox', 'XBoxDDS', 'XBox')):
+    for platform, suffix, tex_fmt, comp in (('PC', '', 'DDS', 'Default'), ('Xbox', '_xbox', 'XBoxDDS', 'XBox')):
         out = DIST / platform
-        archive2(game, root, ['Scripts', 'Meshes', 'Materials'], out / 'Sandbox Room - Main.ba2', 'General', comp)
-        archive2(game, root, ['Textures'], out / 'Sandbox Room - Textures.ba2', tex_fmt, comp)
-        for p in plugins:
-            shutil.copy(DATA / p, out / p)
-    # Nexus zip: FOMOD layout
+        archive2(game, root, ['Scripts', 'Meshes', 'Materials'], out / f'Sandbox Room - Main{suffix}.ba2', 'General', comp)
+        archive2(game, root, ['Textures'], out / f'Sandbox Room - Textures{suffix}.ba2', tex_fmt, comp)
+        shutil.copy(DATA / MAIN, out / MAIN)
     zpath = DIST / f'Sandbox Room {a.version}.zip'
-    info, config = fomod(a.version)
     with zipfile.ZipFile(zpath, 'w', zipfile.ZIP_DEFLATED) as z:
-        z.writestr('fomod/info.xml', info)
-        z.writestr('fomod/ModuleConfig.xml', config)
         for name in (MAIN, 'Sandbox Room - Main.ba2', 'Sandbox Room - Textures.ba2'):
-            z.write(DIST / 'PC' / name, f'Core/{name}')
-        for title, _ in ADDONS:
-            name = f'Sandbox Room - {title}.esp'
-            z.write(DATA / name, f'Add-ons/{title}/{name}')
-        z.write(REPO / 'docs' / 'release' / 'Sandbox Room - Readme.txt', 'Core/Sandbox Room - Readme.txt')
+            z.write(DIST / 'PC' / name, name)
+        z.write(REPO / 'docs' / 'release' / 'Sandbox Room - Readme.txt', 'Sandbox Room - Readme.txt')
     shutil.rmtree(tmp)
     for f in sorted(DIST.rglob('*')):
         if f.is_file():
