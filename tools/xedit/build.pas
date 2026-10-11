@@ -633,8 +633,8 @@ begin
   if Signature(r) <> 'QUST' then
     RemoveElement(ElementByPath(r, 'VMAD'), 'Script Fragments');
   if not Assigned(ScriptEntry(r, scriptName)) then
-    Err(Format('%s: script %s was not attached (VMAD %s, %d scripts, record %s)', [edid, scriptName,
-      BoolToStr(Assigned(ElementByPath(r, 'VMAD')), True), ElementCount(ElementByPath(r, 'VMAD\Scripts')),
+    Err(Format('%s: script %s was not attached (VMAD present %s, %d scripts, record %s)', [edid, scriptName,
+      IntToStr(Ord(Assigned(ElementByPath(r, 'VMAD')))), ElementCount(ElementByPath(r, 'VMAD\Scripts')),
       Name(r)]));
 end;
 
