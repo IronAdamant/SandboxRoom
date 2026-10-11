@@ -70,8 +70,8 @@ Also ships, packed in `Sandbox Room - Main.ba2` / `- Textures.ba2`: the scripts 
   and remapped to a texture rendered with the sign's text, and its material. Installs them into `Data`.
 - `tools/build/build.py` - spec + signs + FO4Edit run + copy to `data/`.
 - `tools/build/package.py --version X.Y.Z` - a release in `dist/`: the BA2 archives for PC and Xbox (`_xbox`
-  names, as the Creation Kit's upload expects), and the two Nexus zips: packed, and loose files for the old-gen
-  game (Archive2 writes BA2 version 8, which the old-gen game cannot read). Release texts and the Bethesda.net steps are in
+  names, as the Creation Kit's upload expects), and the Nexus zip: a FOMOD installer offering packed (next-gen) or loose
+  files (old-gen: Archive2 writes BA2 version 8, which the old-gen game cannot read). Release texts and the Bethesda.net steps are in
   `docs/release/`.
 - `tools/build/compile.py` - compiles the scripts with the Creation Kit's Papyrus compiler (`--debug` keeps
   `Debug.Trace` lines, which release builds strip).

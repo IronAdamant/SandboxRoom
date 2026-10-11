@@ -11,10 +11,12 @@ The Creation Kit's Bethesda.net upload looks for the Xbox versions as "<plugin> 
 Output in dist/:
     PC/      Sandbox Room.esp + the PC archives          (Bethesda.net PC upload)
     Xbox/    Sandbox Room.esp + the _xbox archives       (Bethesda.net Xbox upload: copy beside the plugin in Data)
-    Sandbox Room <version>.zip   for Nexus: the plugin, the PC archives and the readme, laid out as Data
-    Sandbox Room <version> - Loose Files.zip   for Nexus: the plugin and the same files loose, no archives. Archive2
-        writes BA2 version 8, which only the next-gen game (1.10.980+) reads; the old-gen game (1.10.163) reads
-        version 1 only, so its players need the loose files.
+    Sandbox Room <version>.zip   for Nexus: a FOMOD installer (Vortex, Mod Organizer 2) offering
+        00 Packed (Next-Gen)/       the plugin and the PC archives
+        01 Loose Files (Old-Gen)/   the plugin and the same files loose
+      plus the readme. Archive2 writes BA2 version 8, which only the next-gen game (1.10.980+) reads; the old-gen
+      game (1.10.163) reads version 1 only, so its players need the loose files. Manual installs copy the contents
+      of one folder into Data.
 """
 from __future__ import annotations
 
@@ -23,20 +25,59 @@ import shutil
 import subprocess
 import zipfile
 from pathlib import Path
+from xml.sax.saxutils import escape
 
 REPO = Path(__file__).resolve().parents[2]
 DATA = REPO / 'data'
 DIST = REPO / 'dist'
 MAIN = 'Sandbox Room.esp'
 README = REPO / 'docs' / 'release' / 'Sandbox Room - Readme.txt'
-README_INSTALL = r"""Mod manager: install the archive and enable Sandbox Room.esp.
-Manual: copy Sandbox Room.esp, Sandbox Room - Main.ba2 and Sandbox Room - Textures.ba2 into Fallout 4\Data and
-enable the plugin."""
-README_INSTALL_LOOSE = r"""This is the loose-files version, for the old-gen game (1.10.163, before the 2024 next-gen update),
-which cannot read the archives of the main download. Install one version, not both.
-Mod manager: install the archive and enable Sandbox Room.esp.
-Manual: copy Sandbox Room.esp and the Scripts, Meshes, Materials and Textures folders into Fallout 4\Data
-(merge them with the folders already there) and enable the plugin."""
+AUTHOR = 'Deadmansprice'
+PACKED = '00 Packed (Next-Gen)'
+LOOSE = '01 Loose Files (Old-Gen)'
+OPTIONS = (  # (folder, installer name, installer description)
+    (PACKED, 'Packed (Next-Gen)',
+     'For the current game (next-gen update, 1.10.980 or later). The plugin with its two BA2 archives. Recommended.'),
+    (LOOSE, 'Loose Files (Old-Gen)',
+     'For the old-gen game (1.10.163, before the 2024 next-gen update), which cannot read the packed archives. '
+     'The plugin with loose scripts, meshes, materials and textures. Also works on next-gen.'),
+)
+
+
+def fomod_info(version: str) -> str:
+    return f'''<?xml version="1.0" encoding="UTF-8"?>
+<fomod>
+  <Name>Sandbox Room</Name>
+  <Author>{AUTHOR}</Author>
+  <Version>{escape(version)}</Version>
+  <Description>A testing facility reached by holotape: crafting stations, never-empty cabinets, a target range and an arena.</Description>
+</fomod>
+'''
+
+
+def fomod_config() -> str:
+    plugins = ''.join(f'''
+          <plugin name="{escape(name)}">
+            <description>{escape(desc)}</description>
+            <files><folder source="{escape(folder)}" destination="" priority="0"/></files>
+            <typeDescriptor><type name="{'Recommended' if folder == PACKED else 'Optional'}"/></typeDescriptor>
+          </plugin>''' for folder, name, desc in OPTIONS)
+    return f'''<?xml version="1.0" encoding="UTF-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://qconsulting.ca/fo3/ModConfig5.0.xsd">
+  <moduleName>Sandbox Room</moduleName>
+  <installSteps order="Explicit">
+    <installStep name="Game version">
+      <optionalFileGroups order="Explicit">
+        <group name="Which Fallout 4 do you have?" type="SelectExactlyOne">
+          <plugins order="Explicit">{plugins}
+          </plugins>
+        </group>
+      </optionalFileGroups>
+    </installStep>
+  </installSteps>
+</config>
+'''
 
 
 def stage(tmp: Path) -> Path:
@@ -75,19 +116,15 @@ def main():
         shutil.copy(DATA / MAIN, out / MAIN)
     zpath = DIST / f'Sandbox Room {a.version}.zip'
     with zipfile.ZipFile(zpath, 'w', zipfile.ZIP_DEFLATED) as z:
+        z.writestr('fomod/info.xml', fomod_info(a.version))
+        z.writestr('fomod/ModuleConfig.xml', fomod_config())
         for name in (MAIN, 'Sandbox Room - Main.ba2', 'Sandbox Room - Textures.ba2'):
-            z.write(DIST / 'PC' / name, name)
-        z.write(README, 'Sandbox Room - Readme.txt')
-    readme = README.read_text(encoding='utf8')
-    if README_INSTALL not in readme:
-        raise SystemExit("the readme's INSTALLATION text changed: update README_INSTALL in package.py")
-    zpath = DIST / f'Sandbox Room {a.version} - Loose Files.zip'
-    with zipfile.ZipFile(zpath, 'w', zipfile.ZIP_DEFLATED) as z:
-        z.write(DATA / MAIN, MAIN)
+            z.write(DIST / 'PC' / name, f'{PACKED}/{name}')
+        z.write(DATA / MAIN, f'{LOOSE}/{MAIN}')
         for f in sorted(root.rglob('*')):
             if f.is_file():
-                z.write(f, f.relative_to(root).as_posix())
-        z.writestr('Sandbox Room - Readme.txt', readme.replace(README_INSTALL, README_INSTALL_LOOSE))
+                z.write(f, f'{LOOSE}/{f.relative_to(root).as_posix()}')
+        z.write(README, 'Sandbox Room - Readme.txt')
     shutil.rmtree(tmp)
     for f in sorted(DIST.rglob('*')):
         if f.is_file():

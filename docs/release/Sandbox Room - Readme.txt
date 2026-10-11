@@ -23,13 +23,16 @@ Everything in the room is free. Save before you teleport in, and load that save 
 you took.
 
 INSTALLATION
-Mod manager: install the archive and enable Sandbox Room.esp.
-Manual: copy Sandbox Room.esp, Sandbox Room - Main.ba2 and Sandbox Room - Textures.ba2 into Fallout 4\Data and
-enable the plugin.
+Mod manager (Vortex, Mod Organizer 2): install the archive. The installer asks which game you have:
+  Packed (Next-Gen)       the current game (next-gen update, 1.10.980 or later). Recommended.
+  Loose Files (Old-Gen)   the old-gen game (1.10.163), which cannot read the packed archives.
+Then enable Sandbox Room.esp.
+Manual: copy the contents of ONE folder, "00 Packed (Next-Gen)" or "01 Loose Files (Old-Gen)", into
+Fallout 4\Data and enable the plugin.
 
 REQUIREMENTS
-Fallout 4 (next-gen version; for the old-gen game use the Loose Files download) with all the DLC: Automatron, Far Harbor, Nuka-World, Contraptions Workshop and
-Vault-Tec Workshop (Game of the Year / Anniversary editions include them). No F4SE. Light plugin (ESL).
+Fallout 4, next-gen or old-gen, with all the DLC: Automatron, Far Harbor, Nuka-World, Contraptions Workshop
+and Vault-Tec Workshop (Game of the Year / Anniversary editions include them). No F4SE. Light plugin (ESL).
 
 UNINSTALLING
 Teleport out first and use "Remove everything spawned" on the arena terminals. Keep a save from before you
