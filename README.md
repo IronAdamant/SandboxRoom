@@ -73,6 +73,10 @@ Also ships: scripts `Scripts/SandboxRoom/*.pex` (no F4SE needed) and the signs
 - `tools/build/build.py` - spec + signs + FO4Edit run + copy to `data/`.
 - `tools/build/compile.py` - compiles the scripts with the Creation Kit's Papyrus compiler (`--debug` keeps
   `Debug.Trace` lines, which release builds strip).
+- `tools/build/papyrus_log.py on|off` - switches the game's Papyrus log on or off in `Fallout4Custom.ini`.
+  Debugging in-game: `papyrus_log.py on`, `compile.py --debug`, play, read
+  `Documents/My Games/Fallout4/Logs/Script/Papyrus.0.log`; afterwards `papyrus_log.py off` and a release
+  `compile.py`. The door, arena, spawn terminal and target bay scripts log what they do.
 
 ## Building
 
