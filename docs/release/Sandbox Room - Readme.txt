@@ -28,7 +28,7 @@ Manual: copy Sandbox Room.esp, Sandbox Room - Main.ba2 and Sandbox Room - Textur
 enable the plugin.
 
 REQUIREMENTS
-Fallout 4 (current version) with all the DLC: Automatron, Far Harbor, Nuka-World, Contraptions Workshop and
+Fallout 4 (next-gen version; for the old-gen game use the Loose Files download) with all the DLC: Automatron, Far Harbor, Nuka-World, Contraptions Workshop and
 Vault-Tec Workshop (Game of the Year / Anniversary editions include them). No F4SE. Light plugin (ESL).
 
 UNINSTALLING
