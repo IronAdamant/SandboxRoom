@@ -17,6 +17,18 @@ WHAT'S INSIDE
 - Arena: pick an enemy (base game, Automatron, Far Harbor, Nuka-World), then how many (1-10). Enemies stay frozen
   until you walk in, and freeze again when you leave. They cannot follow you out of the arena. Balconies at two
   heights. Kill or remove everything spawned from the terminals.
+- Perks & Stats (new in 1.1, through the door under its sign on the north wall): six terminals.
+    S.P.E.C.I.A.L.   raise or lower each attribute, or set all seven at once
+    Perks            add or remove any perk chart perk a rank at a time or all ranks at once, remove all perks,
+                     or reset them and get the perk points back
+    Perk Points      add unspent perk points, or take some away
+    Level            level up by 1 to 50 (each level brings its perk point); levels can't be lowered
+    Factions         Minutemen, Brotherhood of Steel, Railroad, Institute: friendly, neutral or hostile
+    Hostile Groups   raiders, gunners, super mutants, Children of Atom, Triggermen, the Forged, synths,
+                     Rust Devils, the Mechanist's robots, trappers and the Nuka-World gangs: friendly, neutral
+                     or hostile, one at a time or all at once
+  Story quests can change faction relations again, and turning a story faction friendly or hostile can break its
+  quests: save first.
 
 PLAYING FAIR
 Everything in the room is free. Save before you teleport in, and load that save if you don't want to keep what
@@ -33,6 +45,10 @@ Fallout 4\Data and enable the plugin.
 REQUIREMENTS
 Fallout 4, next-gen or old-gen, with all the DLC: Automatron, Far Harbor, Nuka-World, Contraptions Workshop
 and Vault-Tec Workshop (Game of the Year / Anniversary editions include them). No F4SE. Light plugin (ESL).
+
+VERSION HISTORY
+1.1.0  Perks & Stats room: S.P.E.C.I.A.L., perks, perk points, level and faction relations.
+1.0.0  First release.
 
 UNINSTALLING
 Teleport out first and use "Remove everything spawned" on the arena terminals. Keep a save from before you

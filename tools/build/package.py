@@ -1,4 +1,4 @@
-"""Package a release: BA2 archives for PC and Xbox, and the Nexus zip.
+"""Package a release: the PC BA2 archives and the Nexus zip.
 
     python tools/build/package.py --version 1.0.0 [--game "D:/Steam/steamapps/common/Fallout 4"]
 
@@ -6,11 +6,11 @@ Fallout 4 loads "<plugin> - Main.ba2" and "<plugin> - Textures.ba2" beside a plu
 file the mod needs goes into the plugin's two archives:
     Sandbox Room - Main.ba2      Scripts (compiled, plus sources), sign models and materials   (General)
     Sandbox Room - Textures.ba2  sign textures                                                 (DDS)
-The Creation Kit's Bethesda.net upload looks for the Xbox versions as "<plugin> - Main_xbox.ba2" and
-"- Textures_xbox.ba2" (XBoxDDS textures, Xbox compression).
+No Xbox archives: Archive2's XBoxDDS format keeps the textures in the PC layout (1.0.0 shipped them so, and Xbox
+players reported pink signs). The Creation Kit's Generate makes them at upload; tools/build/check_xbox.py checks
+them (docs/release/BETHESDA_NET.md).
 Output in dist/:
     PC/      Sandbox Room.esp + the PC archives          (Bethesda.net PC upload)
-    Xbox/    Sandbox Room.esp + the _xbox archives       (Bethesda.net Xbox upload: copy beside the plugin in Data)
     Sandbox Room <version>.zip   for Nexus: a FOMOD installer (Vortex, Mod Organizer 2) offering
         00 Packed (Next-Gen)/       the plugin and the PC archives
         01 Loose Files (Old-Gen)/   the plugin and the same files loose
@@ -50,7 +50,7 @@ def fomod_info(version: str) -> str:
   <Name>Sandbox Room</Name>
   <Author>{AUTHOR}</Author>
   <Version>{escape(version)}</Version>
-  <Description>A testing facility reached by holotape: crafting stations, never-empty cabinets, a target range and an arena.</Description>
+  <Description>A testing facility reached by holotape: crafting stations, never-empty cabinets, a target range, an arena and a Perks &amp; Stats room.</Description>
 </fomod>
 '''
 
@@ -109,11 +109,10 @@ def main():
         shutil.rmtree(DIST)
     tmp = DIST / '_stage'
     root = stage(tmp)
-    for platform, suffix, tex_fmt, comp in (('PC', '', 'DDS', 'Default'), ('Xbox', '_xbox', 'XBoxDDS', 'XBox')):
-        out = DIST / platform
-        archive2(game, root, ['Scripts', 'Meshes', 'Materials'], out / f'Sandbox Room - Main{suffix}.ba2', 'General', comp)
-        archive2(game, root, ['Textures'], out / f'Sandbox Room - Textures{suffix}.ba2', tex_fmt, comp)
-        shutil.copy(DATA / MAIN, out / MAIN)
+    out = DIST / 'PC'
+    archive2(game, root, ['Scripts', 'Meshes', 'Materials'], out / 'Sandbox Room - Main.ba2', 'General', 'Default')
+    archive2(game, root, ['Textures'], out / 'Sandbox Room - Textures.ba2', 'DDS', 'Default')
+    shutil.copy(DATA / MAIN, out / MAIN)
     zpath = DIST / f'Sandbox Room {a.version}.zip'
     with zipfile.ZipFile(zpath, 'w', zipfile.ZIP_DEFLATED) as z:
         z.writestr('fomod/info.xml', fomod_info(a.version))

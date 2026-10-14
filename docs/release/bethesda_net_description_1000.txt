@@ -1,11 +1,12 @@
-A clean, up-to-date testing facility, reached by holotape. No skybox, no F4SE. Requires all DLC.
+A clean testing facility, reached by holotape. No F4SE. Requires all DLC.
 
 A few seconds after you get the Pip-Boy (alternative starts too), the (Sandbox Room) Holotape is added. Teleport In takes you to the room; Teleport Out returns you where you were.
 
-- Crafting stations incl. robot workbench and Nuka-Mixer, plus a power armour station with 3 frames.
-- Signed storage cabinets that never run out, base game and every DLC: Weapons & Ammo, Apparel, Mods, Power Armor, Aid, Misc.
+- Crafting stations, robot workbench, Nuka-Mixer, power armour station with 3 frames.
+- Storage cabinets that never run out, base game and every DLC.
 - Target range: holographic targets that stand still, never fight back and give no XP. Set health (up to 100,000) and armour. Galleries at two heights.
 - Arena: base game, Automatron, Far Harbor and Nuka-World enemies - pick one and how many (1-10). They stay frozen until you walk in and can't follow you out.
+- NEW in 1.1, Perks & Stats: set S.P.E.C.I.A.L., add or remove perks (or reset them), perk points, level up, faction relations.
 
 Playing fair is up to you: save before teleporting in.
 

@@ -11,6 +11,8 @@ Coordinates are game units (about 1.4 cm each); +X is east, +Y north. One interi
                                                 walled target bays with holographic targets
     lobby (south of the hall, through a door):  the arena terminals
     arena (south of the lobby, two doors):      terrain; spawns wake up while the player is inside
+    Perks & Stats (north of the hall, a door):  terminals for S.P.E.C.I.A.L., perks, perk points, level and faction
+                                                relations (since 1.1)
 
 Signs are generated models (tools/build/signs.py renders their textures): make_spec records every sign it places
 in work/signs.json.
@@ -31,7 +33,8 @@ SIGNS_JSON = REPO / 'work' / 'signs.json'
 MAIN = 'Sandbox Room.esp'
 AUTHOR = 'Deadmansprice'
 DESCRIPTION = ('Sandbox Room: a testing facility reached by holotape. Refilling storage, crafting stations, a target '
-               'range with holographic targets and an arena whose enemies wake when you walk in. Requires all DLC.')
+               'range with holographic targets, an arena whose enemies wake when you walk in, and a Perks & Stats '
+               'room for S.P.E.C.I.A.L., perks, level and faction relations. Requires all DLC.')
 # One plugin for everything (since 1.0): the DLC content is part of Sandbox Room.esp, so it needs these masters, in
 # load order. (Before, each DLC had its own add-on plugin; most copies of the game now include all the DLC.)
 DLC_MASTERS = ['DLCRobot.esm', 'DLCCoast.esm', 'DLCworkshop02.esm', 'DLCworkshop03.esm', 'DLCNukaWorld.esm']
@@ -66,6 +69,30 @@ AI_TERMINAL_Y = LY0 + 106                  # against the lobby's south wall, fac
 AI_TERMINAL_X = 310                        # base game's; the add-ons' follow at 220 apart (Dlc.ai_terminal_x),
                                            # the row centred on the hall door between the two arena doors
 BALCONY_X0, BALCONY_X1 = -1024, 3072       # arena balconies along its north wall, two cells deep
+
+# Perks & Stats (1.1): a small room north of the hall, through a door in the hall's north wall (between the power
+# armor cabinets, which end at x 1440, and the gallery stairs). Six terminals stand in a row against its north wall,
+# facing the door, each with a label. The room is centred on the door.
+PX0, PX1, PY0, PY1 = 1024, 2304, Y1, Y1 + 3 * G
+PERKS_DOOR_X = 1664
+PERKS_SIGN_Z = 420                         # over the door; at the ARENA sign's 330 it would touch the end of the
+                                           # POWER ARMOR header (z 300, up to x 1474)
+PERKS_TERMINAL_Y, PERKS_TERMINAL_PITCH = PY1 - 106, 160
+SPECIAL = ['Strength', 'Perception', 'Endurance', 'Charisma', 'Intelligence', 'Agility', 'Luck']
+SPECIAL_MAX = 15                           # SpecialTerminalScript.MaxValue
+PERK_POINTS_ADD, PERK_POINTS_REMOVE = [1, 5, 10, 25], [1, 5, 10]   # items N and 100 + N
+LEVELS_UP = [1, 5, 10, 25, 50]
+# (menu text, faction editor IDs): story factions on one terminal, hostile groups on another
+MAJOR_FACTIONS = [('Minutemen', ['MinutemenFaction']), ('Brotherhood of Steel', ['BrotherhoodofSteelFaction']),
+                  ('Railroad', ['RailroadFaction']), ('Institute', ['InstituteFaction'])]
+HOSTILE_GROUPS = [('Raiders', ['RaiderFaction']), ('Gunners', ['GunnerFaction']),
+                  ('Super Mutants', ['SuperMutantFaction', 'MutantHoundFaction']),
+                  ('Children of Atom', ['ChildrenOfAtomFaction']), ('Triggermen', ['TriggermanFaction']),
+                  ('The Forged', ['TheForgedFaction']), ('Synths', ['SynthFaction']),
+                  ('Rust Devils', ['DLC01RaiderFaction']), ('Mechanist robots', ['DLC01MechanistFaction']),
+                  ('Trappers', ['DLC03TrapperFaction', 'DLC03TrapperFactionCoast', 'DLC03TrapperFactionWoods']),
+                  ('Disciples', ['DLC04GangDisciplesFaction']), ('Operators', ['DLC04GangOperatorsFaction']),
+                  ('The Pack', ['DLC04GangPackFaction'])]
 ARENA_SPAWNS = [(0, -2700), (1500, -2550), (3000, -2700), (600, -3700), (2300, -3700), (3700, -3600),
                 (-700, -3500), (1500, -4500), (2900, -4800)]
 # (base, x, y, z, rotation): mounds, outcrops, boulders and dead trees; the spawn points stay in the open
@@ -570,8 +597,9 @@ def hall(s: Spec):
     s.op('set', CELL, 'XCIM', '@InstituteImageSpaceF4New')
     s.op('set', CELL, 'LTMP', '@InstituteLightingTemplateNew')
     slab_grid(s, 'SBR_Floor', X0, X1, Y0, Y1, 0, big=True)
-    wall_ring(s, 'SBR_Hall', X0, X1, Y0, Y1, doors={'S': [HALL_DOOR_X]})
+    wall_ring(s, 'SBR_Hall', X0, X1, Y0, Y1, doors={'S': [HALL_DOOR_X], 'N': [PERKS_DOOR_X]})
     door(s, 'SBR_WingDoor', HALL_DOOR_X, Y0, along_x=True)
+    door(s, 'SBR_PerksDoor', PERKS_DOOR_X, Y1, along_x=True)
     lights = [(x, y) for x in range(X0 + 384, LANE_X, 768) for y in (-512, 512)]
     lights += [(LANE_X + G, -512), (LANE_X + G, 512)]
     lights += [(BAY_X + 768, Y0 + BAY_WIDTH * n + BAY_WIDTH // 2) for n in range(len(BAYS))]
@@ -720,6 +748,54 @@ def wing(s: Spec):
         s.op('prop', zone, zs, prop, 'Float', v)
 
 
+@dataclass
+class ChartPerk:
+    key: str            # for editor IDs
+    name: str           # menu text ("Lady Killer / Black Widow" for a male/female pair)
+    special: str
+    column: int         # its place in the S.P.E.C.I.A.L.'s row of the perk chart (the attribute it needs)
+    ranks: list         # editor IDs of its ranks, in order (the male version of a pair)
+    female: list        # the female version's ranks, if any
+
+
+def load_perks() -> dict:
+    """The perk chart from work/scan/perks.tsv (tools/xedit/scan_perks.pas): S.P.E.C.I.A.L. -> its perks by column.
+    A perk's first rank needs level 0 and an attribute (GetBaseValue); its ranks follow the next-perk links (NNAM),
+    because the Num Ranks field is wrong for some (Aquaboy says 1). The Training perks (raising an attribute in
+    the chart) and the Courser's Gunslinger copies are not chart perks."""
+    rows = {}
+    with open(SCAN / 'perks.tsv', encoding='utf8', errors='replace') as f:
+        for r in csv.reader(f, delimiter='\t', quoting=csv.QUOTE_NONE):
+            r += [''] * (10 - len(r))
+            rows[r[2]] = {'name': r[3], 'special': r[4].split(' ')[0], 'column': r[5], 'level': r[6],
+                          'next': r[8], 'sex': r[9]}
+
+    def chain(edid):
+        out = [edid]
+        while rows[out[-1]]['next'] in rows and rows[out[-1]]['next'] not in out:
+            out.append(rows[out[-1]]['next'])
+        return out
+
+    firsts = [e for e, r in rows.items() if r['level'] == '0' and r['special'] in SPECIAL
+              and not e.startswith(('Training', 'Courser'))]
+    chart: dict = {sp: [] for sp in SPECIAL}
+    for e in sorted(firsts, key=lambda e: rows[e]['sex'] == 'Female'):  # male (or only) version first
+        r = rows[e]
+        column = round(float(r['column']))
+        pair = next((p for p in chart[r['special']] if p.column == column), None)
+        if pair and r['sex'] == 'Female':
+            pair.female = chain(e)
+            pair.name += ' / ' + r['name']
+            pair.key += key_of(r['name'])
+            continue
+        chart[r['special']].append(ChartPerk(key_of(r['name']), r['name'], r['special'], column, chain(e), []))
+    for sp in SPECIAL:
+        chart[sp].sort(key=lambda p: p.column)
+        if [p.column for p in chart[sp]] != list(range(1, 11)):
+            raise SystemExit(f'perk chart: {sp} has columns {[p.column for p in chart[sp]]}, expected 1 to 10')
+    return chart
+
+
 INWARD = {'N': (0, 1), 'S': (0, -1), 'E': (1, 0), 'W': (-1, 0)}  # unit vector of a facing
 
 
@@ -747,6 +823,121 @@ def header(s: Spec, edid: str, text: str, wall: str, centre: int, length: int, s
         for k in range(n):
             sx, sy = along_wall(wall, centre + (k - (n - 1) / 2) * SHELF_W, WALL_FACE)
             s.ref(f'{edid}Shelf_{k}', '@InstituteShelfA01', sx, sy, SHELF_Z, rz=SHELF_RZ[facing])
+
+
+PS_TITLE = 'Perks & Stats'
+
+
+def ps_terminal(s: Spec, edid: str, title: str, text: str):
+    """A Perks & Stats terminal or submenu: the room's name and the menu's title over its text."""
+    s.terminal(edid, f'{PS_TITLE}: {title}', f'{PS_TITLE.upper()}\n{title.upper()}\n{text}')
+
+
+def faction_terminal(s: Spec, prefix: str, title: str, text: str, groups: list) -> str:
+    """A terminal with a submenu per faction (or group of factions): friendly, neutral or hostile."""
+    top, sc = prefix + 'Terminal', 'SandboxRoom:FactionTerminalScript'
+    ps_terminal(s, top, title, text)
+    for n, (name, factions) in enumerate(groups, 1):
+        sub = prefix + '_' + key_of(name)
+        ps_terminal(s, sub, name, 'Friendly: they leave you alone. Neutral: they ignore you unless provoked. '
+                                  'Hostile: they attack on sight.')
+        for item, state in ((1, 'Friendly'), (2, 'Neutral'), (3, 'Hostile')):
+            s.op('menu', sub, item, state, '-', '-')
+        s.op('script', sub, sc)
+        s.op('prop', sub, sc, 'Factions', 'Array of Object', ','.join('@' + f for f in factions))
+        s.op('prop', sub, sc, 'PlayerFaction', 'Object', '@PlayerFaction')
+        s.op('prop', sub, sc, 'GroupName', 'String', name)
+        s.op('menu', top, n, name, '@' + sub, '-')
+    return top
+
+
+def perks_room(s: Spec, chart: dict):
+    s.comment('Perks & Stats (1.1): a small room north of the hall with six terminals against its north wall, '
+              'each with a label: S.P.E.C.I.A.L., perks, perk points, level, factions and hostile groups')
+    wall_ring(s, 'SBR_Perks', PX0, PX1, PY0, PY1, doors={'S': [PERKS_DOOR_X]})
+    slab_grid(s, 'SBR_PerksFloor', PX0, PX1, PY0, PY1, 0, big=False)
+    ceiling(s, 'SBR_Perks', PX0, PX1, PY0, PY1, [(PERKS_DOOR_X + dx, (PY0 + PY1) // 2) for dx in (-256, 256)])
+    s.ref('SBR_HeaderPerksStats', s.sign('PERKS & STATS', 'Header'), PERKS_DOOR_X, Y1 - WALL_FACE - 1,
+          PERKS_SIGN_Z, rz=SIGN_RZ['S'])
+
+    s.comment('S.P.E.C.I.A.L.: a submenu per attribute, or all seven at once')
+    top, sc = 'SBR_PSSpecialTerminal', 'SandboxRoom:SpecialTerminalScript'
+    specials = ','.join('@' + a for a in SPECIAL)
+    ps_terminal(s, top, 'S.P.E.C.I.A.L.', 'Pick an attribute, or set all seven at once. This sets the base value, '
+                                          'as the perk chart does: bobbleheads and apparel still add on top.')
+    for n, attr in enumerate(SPECIAL):
+        sub = f'SBR_PSSpecial_{attr}'
+        ps_terminal(s, sub, attr, f'Raise or lower it by one, or set it (1 to {SPECIAL_MAX}).')
+        for item, text in ((1, '+1'), (2, '-1'), (3, 'Set to 1'), (4, 'Set to 5'), (5, 'Set to 10')):
+            s.op('menu', sub, item, text, '-', '-')
+        s.op('script', sub, sc)
+        s.op('prop', sub, sc, 'Specials', 'Array of Object', specials)
+        s.op('prop', sub, sc, 'Stat', 'Int32', n)
+        s.op('prop', sub, sc, 'StatName', 'String', attr)
+        s.op('menu', top, n + 1, attr, '@' + sub, '-')
+    for item, v in ((11, 1), (12, 5), (13, 10)):
+        s.op('menu', top, item, f'Set all to {v}', '-', '-')
+    s.op('script', top, sc)
+    s.op('prop', top, sc, 'Specials', 'Array of Object', specials)
+
+    s.comment('perks: S.P.E.C.I.A.L. -> perk -> add or remove ranks; remove all, or reset with the points back')
+    top, rs = 'SBR_PSPerksTerminal', 'SandboxRoom:PerkResetScript'
+    ps_terminal(s, top, 'Perks', 'Pick a S.P.E.C.I.A.L., then a perk. Level and attribute requirements are '
+                                 'ignored. Removing a rank does not give its point back; Reset does, for every rank.')
+    for n, attr in enumerate(SPECIAL, 1):
+        sub = f'SBR_PSPerks_{attr}'
+        ps_terminal(s, sub, f'{attr} perks', 'Pick a perk.')
+        for k, p in enumerate(chart[attr], 1):
+            pt, ps = f'SBR_PSPerk_{p.key}', 'SandboxRoom:PerkTerminalScript'
+            ranks = f'{len(p.ranks)} rank' + ('s' if len(p.ranks) > 1 else '')
+            ps_terminal(s, pt, p.name, f'{ranks}. A rank at a time, or all of them.')
+            for item, text in ((1, 'Add a rank'), (2, 'Remove a rank'), (3, f'Add all ({ranks})'),
+                               (4, 'Remove all ranks')):
+                s.op('menu', pt, item, text, '-', '-')
+            s.op('script', pt, ps)
+            s.op('prop', pt, ps, 'Ranks', 'Array of Object', ','.join('@' + e for e in p.ranks))
+            if p.female:
+                s.op('prop', pt, ps, 'FemaleRanks', 'Array of Object', ','.join('@' + e for e in p.female))
+            s.op('prop', pt, ps, 'PerkName', 'String', p.name)
+            s.op('menu', sub, k, f'{p.name} ({ranks})', '@' + pt, '-')
+        s.op('menu', top, n, attr, '@' + sub, '-')
+    s.op('menu', top, 901, 'Remove all perks', '-', '-')
+    s.op('menu', top, 902, 'Reset: remove all perks, get the points back', '-', '-')
+    s.op('script', top, rs)
+    for attr in SPECIAL:
+        s.op('prop', top, rs, f'{attr}Perks', 'Array of Object',
+             ','.join('@' + e for p in chart[attr] for e in p.ranks + p.female))
+
+    s.comment('perk points and level')
+    points = 'SBR_PSPointsTerminal'
+    ps_terminal(s, points, 'Perk Points', 'Add unspent perk points, or take some away (taking more than you have '
+                                          'is not prevented).')
+    for n in PERK_POINTS_ADD:
+        s.op('menu', points, n, f'Add {n}', '-', '-')
+    for n in PERK_POINTS_REMOVE:
+        s.op('menu', points, 100 + n, f'Take away {n}', '-', '-')
+    s.op('script', points, 'SandboxRoom:PerkPointsTerminalScript')
+    level = 'SBR_PSLevelTerminal'
+    ps_terminal(s, level, 'Level', 'Level up by awarding the XP it takes; each level brings its perk point. Levels '
+                                   'cannot be lowered.')
+    for n in LEVELS_UP:
+        s.op('menu', level, n, f'+{n} level' + ('s' if n > 1 else ''), '-', '-')
+    s.op('script', level, 'SandboxRoom:LevelTerminalScript')
+
+    s.comment('faction relations: the story factions, and the hostile groups (plus all of them at once)')
+    factions = faction_terminal(s, 'SBR_PSFactions', 'Factions',
+                                'Story quests can change these again, and turning a story faction friendly or '
+                                'hostile can break its quests: save first.', MAJOR_FACTIONS)
+    groups = faction_terminal(s, 'SBR_PSGroups', 'Hostile Groups',
+                              'Some places give their people a faction of their own, which keeps its attitude.',
+                              HOSTILE_GROUPS + [('All hostile groups', [f for _, fs in HOSTILE_GROUPS for f in fs])])
+
+    terminals = [('SBR_PSSpecialTerminal', 'S.P.E.C.I.A.L.'), (top, 'Perks'), (points, 'Perk Points'),
+                 (level, 'Level'), (factions, 'Factions'), (groups, 'Hostile Groups')]
+    for k, (term, text) in enumerate(terminals):
+        x = round(PERKS_DOOR_X + (k - (len(terminals) - 1) / 2) * PERKS_TERMINAL_PITCH)
+        s.ref(term + 'Ref', '@' + term, x, PERKS_TERMINAL_Y, rz=FACE_SOUTH)
+        label(s, term + 'Label', text, x, PERKS_TERMINAL_Y, 'S', 127, 34)
 
 
 def dlc_items(chests: dict, d: Dlc, section: str) -> list:
@@ -870,6 +1061,7 @@ def main_plugin(s: Spec, chests: dict):
     spawn_terminal(s, 'SBR_AISpawn', 'Sandbox Room Arena',
                    'Spawns wake up when you enter the arena and freeze when you leave.', SPAWN_MENUS,
                    AI_TERMINAL_X, AI_TERMINAL_Y, 'Base Game')
+    perks_room(s, load_perks())
 
 
 def dlc_content(s: Spec, d: Dlc, chests: dict):

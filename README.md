@@ -40,6 +40,24 @@ ceiling lights.
 - Enemies can't leave the arena: its navmesh (arena floor, balconies and stairs) is not connected to the lobby's,
   so they have no path through the doors.
 
+**Perks & Stats** (new in 1.1; through the door under the PERKS & STATS sign in the hall's north wall): a small
+room with six terminals in a labelled row, facing the door. All scripted, no F4SE.
+- **S.P.E.C.I.A.L.**: raise or lower an attribute by one, set it to 1, 5 or 10, or set all seven at once (the base
+  value, which is what the perk chart raises).
+- **Perks**: a submenu per S.P.E.C.I.A.L., then per perk (the 70 chart perks; Lady Killer / Black Widow and the
+  other male/female pairs pick the player's version): add or remove a rank, add all ranks, remove all ranks.
+  "Remove all perks", or "Reset", which also gives back a perk point per rank removed. Requirements are ignored.
+  The chart comes from the game data (`tools/xedit/scan_perks.pas` -> `work/scan/perks.tsv`); ranks follow the
+  next-perk links, which include the DLC ranks (Strong Back 5, Steady Aim 3, Night Person 3).
+- **Perk Points**: add 1, 5, 10 or 25 unspent points, or take 1, 5 or 10 away (untested at 0 points: the game has
+  no way to read the count).
+- **Level**: +1, 5, 10, 25 or 50 levels, by awarding exactly the XP needed (direct XP, so Intelligence does not
+  inflate it). Levels cannot be lowered without F4SE.
+- **Factions** (Minutemen, Brotherhood of Steel, Railroad, Institute) and **Hostile Groups** (raiders, gunners,
+  super mutants, Children of Atom, Triggermen, the Forged, synths, Rust Devils, the Mechanist's robots, trappers,
+  Disciples, Operators, the Pack, or all of them): friendly, neutral or hostile, set the way the game's own quests
+  do it.
+
 **(Sandbox Room) Holotape**, added to your inventory a few seconds after you get the Pip-Boy (in Vault 111,
 with an alternative-start mod, or right away on an existing save): *Teleport In* saves your exact position and
 takes you to the room; inside, it offers *Teleport Out* instead, which returns you there with everything you
@@ -60,6 +78,8 @@ Also ships, packed in `Sandbox Room - Main.ba2` / `- Textures.ba2`: the scripts 
 - `data/` - what ships, laid out like the game's `Data` folder.
 - `source/User/SandboxRoom/` - Papyrus sources.
 - `tools/xedit/scan.pas` - read-only scan of the official masters (items, workbenches, creature lists).
+- `tools/xedit/scan_perks.pas` - read-only scan of the perk chart (`work/scan/perks.tsv`), for Perks & Stats:
+  `python -m ack xedit run "<repo>/tools/xedit/scan_perks.pas" "Sandbox Room.esp"`, then copy `perks.tsv`.
 - `tools/build/make_spec.py` - **the design**: room layout, chest contents, spawn lists, DLC content. Generates
   `work/spec.txt`.
 - `tools/xedit/build.pas` - applies the spec with FO4Edit. Re-runnable: records and placed objects are found by
@@ -69,8 +89,8 @@ Also ships, packed in `Sandbox Room - Main.ba2` / `- Textures.ba2`: the scripts 
 - `tools/build/signs.py` - makes the signs make_spec lists (`work/signs.json`): a vanilla poster model resized
   and remapped to a texture rendered with the sign's text, and its material. Installs them into `Data`.
 - `tools/build/build.py` - spec + signs + FO4Edit run + copy to `data/`.
-- `tools/build/package.py --version X.Y.Z` - a release in `dist/`: the BA2 archives for PC and Xbox (`_xbox`
-  names, as the Creation Kit's upload expects), and the Nexus zip: a FOMOD installer offering packed (next-gen) or loose
+- `tools/build/package.py --version X.Y.Z` - a release in `dist/`: the PC BA2 archives (the Xbox ones come from
+  the Creation Kit's Generate at upload: `tools/build/check_xbox.py` checks them), and the Nexus zip: a FOMOD installer offering packed (next-gen) or loose
   files (old-gen: Archive2 writes BA2 version 8, which the old-gen game cannot read). Release texts and the Bethesda.net steps are in
   `docs/release/`.
 - `tools/build/compile.py` - compiles the scripts with the Creation Kit's Papyrus compiler (`--debug` keeps
