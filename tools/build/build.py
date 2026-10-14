@@ -25,7 +25,6 @@ def main():
     ap.add_argument('--game', default='D:/Steam/steamapps/common/Fallout 4')
     a = ap.parse_args()
     sys.path.insert(0, a.ack)
-    refuse_if_ck_running()
     make_spec.main()
     import signs
     signs.install(signs.build(a.ack, Path(a.game)), Path(a.game))
@@ -40,6 +39,8 @@ def main():
     r = subprocess.run(cmd, cwd=a.ack, capture_output=True, text=True)
     print(r.stdout.strip())
     if r.returncode != 0 or 'done in' not in r.stdout:
+        # ack refuses a saving run while a Creation Kit that could save over the plugin is open (a stale CK save
+        # once overwrote a build): close it with python -m ack ck close, or by hand without saving
         raise SystemExit('xEdit run failed')
     run_dir = sorted(Path(a.ack, 'private', 'runs').glob('*-build'))[-1]
     result = (run_dir / 'result.txt').read_text(encoding='utf8').splitlines()
@@ -51,14 +52,6 @@ def main():
     for name in [make_spec.MAIN] + addons:
         shutil.copy(data / name, REPO / 'data' / name)
     print('copied plugins to data/')
-
-
-def refuse_if_ck_running() -> None:
-    """A Creation Kit left open holds its own copy of the plugins: one save from it (a stray Ctrl+S) writes that
-    stale copy over the build. Close it first."""
-    r = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq CreationKit.exe', '/NH'], capture_output=True, text=True)
-    if 'CreationKit.exe' in r.stdout:
-        raise SystemExit('the Creation Kit is running: close it (without saving) before building')
 
 
 def check_masters(data: Path) -> None:
