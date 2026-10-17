@@ -21,12 +21,13 @@ WHAT'S INSIDE
     S.P.E.C.I.A.L.   raise or lower each attribute, or set all seven at once
     Perks            add or remove any perk chart perk a rank at a time or all ranks at once, remove all perks,
                      or reset them and get the perk points back
-    Perk Points      add unspent perk points, or take some away
+    Perk Points      add unspent perk points
     Level            level up by 1 to 50 (each level brings its perk point); levels can't be lowered
-    Factions         Minutemen, Brotherhood of Steel, Railroad, Institute: friendly, neutral or hostile
+    Factions         Minutemen, Brotherhood of Steel, Railroad, Institute: friendly, neutral or hostile; the
+                     menu shows where each one stands
     Hostile Groups   raiders, gunners, super mutants, Children of Atom, Triggermen, the Forged, synths,
-                     Rust Devils, the Mechanist's robots, trappers and the Nuka-World gangs: friendly, neutral
-                     or hostile, one at a time or all at once
+                     Rust Devils, the Mechanist's robots, trappers and the Nuka-World gangs: friendly or
+                     hostile, one at a time or all at once (they attack neutrals on sight, so no neutral)
   Story quests can change faction relations again, and turning a story faction friendly or hostile can break its
   quests: save first.
 

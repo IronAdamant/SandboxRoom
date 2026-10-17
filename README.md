@@ -9,7 +9,8 @@ ceiling lights.
   the Nuka-World Nuka-Mixer, and power armor with **three empty power armor frames** beside it.
 - **Storage**: signed sections of lab filing cabinets along the walls, each with a header sign, an Institute
   shelf and a label on every cabinet. The cabinets never run out: whatever you take is put straight back.
-  - Weapons & Ammo: Ballistic Guns, Energy Weapons, Heavy Weapons, Melee Weapons, Explosives, Ammo
+  - Weapons & Ammo: Ballistic Guns, Energy Weapons, Heavy Weapons, Melee Weapons, Explosives, Ammo (all of it,
+    the DLC's included: the DLC cabinets in this section hold weapons only)
   - Apparel: Armor, Clothing, Headwear, Dogmeat Gear
   - Mods: Weapon Mods, Armor Mods
   - Power Armor (by the power armor station): Power Armor, Power Armor Mods
@@ -35,6 +36,9 @@ ceiling lights.
   walk up to them.
 - The arena: dirt ground, mounds, rock outcrops, boulders and dead trees; no buildings. Railed balconies at
   storeys 1 and 2 along its north wall.
+- The hostile Brotherhood of Steel and Institute entries spawn from the room's copies of the game's lists, which
+  spawn nothing until the story turns those factions hostile; the room's spawns are moved into their own faction,
+  an enemy of the player, so they stay hostile whatever the Factions terminal says.
 - Pick an enemy on a lobby terminal, then how many (1 to 10). Each one lands at a random spot across the arena with full AI, but stays frozen while you
   are outside the arena and wakes up as soon as you step through a door (and freezes again when you leave).
 - Enemies can't leave the arena: its navmesh (arena floor, balconies and stairs) is not connected to the lobby's,
@@ -49,14 +53,29 @@ room with six terminals in a labelled row, facing the door. All scripted, no F4S
   "Remove all perks", or "Reset", which also gives back a perk point per rank removed. Requirements are ignored.
   The chart comes from the game data (`tools/xedit/scan_perks.pas` -> `work/scan/perks.tsv`); ranks follow the
   next-perk links, which include the DLC ranks (Strong Back 5, Steady Aim 3, Night Person 3).
-- **Perk Points**: add 1, 5, 10 or 25 unspent points, or take 1, 5 or 10 away (untested at 0 points: the game has
-  no way to read the count).
+- **Perk Points**: add 1, 5, 10 or 25 unspent points. Taking points away was dropped after 1.1 testing: the game
+  ignored negative amounts, and it has no way to read or set the count.
 - **Level**: +1, 5, 10, 25 or 50 levels, by awarding exactly the XP needed (direct XP, so Intelligence does not
   inflate it). Levels cannot be lowered without F4SE.
 - **Factions** (Minutemen, Brotherhood of Steel, Railroad, Institute) and **Hostile Groups** (raiders, gunners,
   super mutants, Children of Atom, Triggermen, the Forged, synths, Rust Devils, the Mechanist's robots, trappers,
-  Disciples, Operators, the Pack, or all of them): friendly, neutral or hostile, set the way the game's own quests
-  do it.
+  Disciples, Operators, the Pack, or all of them), set the way the game's own quests do it. The menu shows each
+  one's current relation ("Raiders [Hostile]"), read from the game whenever the terminal loads or is used; its
+  submenu shows it on top and offers the others. Story factions: friendly, neutral or hostile. Hostile groups:
+  friendly or hostile only, because all their people are Very Aggressive (they attack neutrals on sight, so neutral
+  plays out as hostile); friendly ones still fight back if attacked.
+
+**Hack and Lock Practice** (through the door under the HACK AND LOCK PRACTICE sign in the hall's west wall, behind
+the arrival point): a small room for practising lockpicking and hacking.
+- A row of tables along the north wall with footlockers on it. The one at the door end is unlocked and holds 100
+  bobby pins, refilled like the cabinets; the others are empty and locked Novice, Advanced, Expert and Master, going
+  away from the door, each with a label.
+- Four standing terminals against the south wall, locked (hacking) Novice to Master, each with a label. Nothing is
+  on them.
+- Lock levels are XLOC values 25 Novice, 50 Advanced, 75 Expert, 100 Master (as the game reads them).
+- Picked or hacked, each one locks again at its level as soon as you close the chest or step away from the
+  terminal (or, if it is left unopened, 15 seconds later), ready for the next try. Advanced and above need the
+  Locksmith or Hacker perk ranks, as anywhere in the game: the Perks & Stats room can add them.
 
 **(Sandbox Room) Holotape**, added to your inventory a few seconds after you get the Pip-Boy (in Vault 111,
 with an alternative-start mod, or right away on an existing save): *Teleport In* saves your exact position and

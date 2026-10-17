@@ -14,17 +14,22 @@
     remove   | EDID | PATH                   remove a field if present
     ref      | EDID | CELL | BASE | X Y Z | RX RY RZ | OPTS   place a reference, or update it to match: base,
                                              position and rotation. OPTS: "-" or any of persistent, scale=N,
-                                             swap=TOKEN (material swap), radius=N (light radius override)
+                                             swap=TOKEN (material swap), radius=N (light radius override),
+                                             lock=N (locked at lock level N: 25 Novice, 50 Advanced, 75 Expert,
+                                             100 Master)
     prune    | CELL | PREFIX                 delete this plugin's refs in CELL whose editor IDs start with PREFIX
                                              and that no ref operation above placed (taken out of the spec)
     unref    | EDID | CELL                   delete a placed reference if it exists
     prunerecords | PREFIX                    delete this plugin's records (not references) whose editor IDs
                                              start with PREFIX and that no copy/new operation above made
     items    | EDID | TOKEN*COUNT ; ...      replace a container's inventory
+    formlist | EDID | TOKEN,TOKEN,...        replace a form list's forms
     menuclear| EDID                          remove a terminal's menu items
     menu     | EDID | ID | TEXT | SUBMENU | CONDITION   append a terminal menu item. SUBMENU: a TERM, or "-" for
                                              an item that runs and redisplays the same menu.
                                              CONDITION: "-" or FUNCTION:PARAM:VALUE, run on the player
+    body     | EDID | TEXT | CONDITION       append a terminal body text item, shown under the welcome text when
+                                             CONDITION (as for menu) holds
     script   | EDID | SCRIPTNAME             attach a script (once)
     propremove | EDID | SCRIPTNAME | NAME    drop a script property the script no longer has (if present)
     prop     | EDID | SCRIPTNAME | NAME | TYPE | VALUE   set a script property. TYPE Object, Int32, Float, Bool or
@@ -39,7 +44,8 @@ const
   TargetFile = '{{TARGET}}';
   OutDir = '{{OUT}}';
   SpecFile = '{{SPEC}}';
-  MenuTemplate = 'VRWorkshopShared_VRTerminalConsoleTallOn';  // vanilla terminal whose menu items have conditions
+  MenuTemplate = 'VRWorkshopShared_VRTerminalConsoleTallOn';  // vanilla terminal whose menu items and body text
+                                                              // have conditions
 
 var
   log, cache, refIdx, touched, made: TStringList;
@@ -348,7 +354,7 @@ begin
   IndexGroup(ChildGroup(cell));
 end;
 
-// OPTS: "-" or space-separated persistent, scale=N, swap=TOKEN (material swap), radius=N (light radius)
+// OPTS: "-" or space-separated persistent, scale=N, swap=TOKEN (material swap), radius=N (light radius), lock=N
 function Opt(opts, key: string): string;
 var
   sl: TStringList;
@@ -381,7 +387,7 @@ procedure OpRef(edid, cellId, base, pos, rot, opts: string);
 var
   cell, b, r: IInterface;
   i: integer;
-  before: string;
+  before, lvl: string;
 begin
   cell := Rec(cellId);
   b := Token(base);
@@ -413,6 +419,17 @@ begin
   SetOrRemove(r, 'XSCL', Opt(opts, 'scale'));
   SetOrRemove(r, 'XMSP', Opt(opts, 'swap'));
   SetOrRemove(r, 'XRDS', Opt(opts, 'radius'));
+  // a lock is the reference's lock data (XLOC) with the level as a number
+  lvl := Opt(opts, 'lock');
+  if lvl <> '' then begin
+    if not Assigned(ElementByPath(r, 'XLOC')) then
+      Add(r, 'XLOC', True);
+    SetElementNativeValues(r, 'XLOC\Level', StrToInt(lvl));
+    if GetElementNativeValues(r, 'XLOC\Level') <> StrToInt(lvl) then
+      Err(edid + ': lock level ' + lvl + ' was not set');
+  end
+  else if Assigned(ElementByPath(r, 'XLOC')) then
+    RemoveElement(r, 'XLOC');
   touched.Add(edid);
   Remember(edid, r);
 end;
@@ -526,6 +543,33 @@ begin
   sl.Free;
 end;
 
+procedure OpFormList(edid, list: string);
+var
+  r, forms, it: IInterface;
+  sl: TStringList;
+  i: integer;
+begin
+  r := Rec(edid);
+  if not Assigned(r) then
+    Exit;
+  r := InCur(r);
+  RemoveElement(r, 'FormIDs');
+  sl := TStringList.Create;
+  sl.Delimiter := ',';
+  sl.StrictDelimiter := True;
+  sl.DelimitedText := list;
+  forms := Add(r, 'FormIDs', True);
+  for i := 0 to sl.Count - 1 do begin
+    if i = 0 then
+      it := ElementByIndex(forms, 0)
+    else
+      it := ElementAssign(forms, HighInteger, nil, False);
+    SetEditValue(it, Value(Trim(sl[i])));
+  end;
+  log.Add(Format('%s: %d forms', [edid, ElementCount(forms)]));
+  sl.Free;
+end;
+
 procedure OpMenuClear(edid: string);
 var
   r: IInterface;
@@ -538,10 +582,38 @@ begin
   end;
 end;
 
+// Make an item's conditions (copied from a vanilla item) the one CONDITION "FUNCTION:PARAM:VALUE": FUNCTION(PARAM)
+// equal to VALUE, run on the player.
+procedure SetCondition(it: IInterface; cond, what: string);
+var
+  conds, c: IInterface;
+  parts: TStringList;
+begin
+  conds := ElementByPath(it, 'Conditions');
+  while ElementCount(conds) > 1 do
+    Remove(ElementByIndex(conds, 1));
+  c := ElementByIndex(conds, 0);
+  if not Assigned(c) then begin
+    Err('cannot add a condition to ' + what);
+    Exit;
+  end;
+  RemoveElement(c, 'CIS2');
+  parts := TStringList.Create;
+  parts.Delimiter := ':';
+  parts.StrictDelimiter := True;
+  parts.DelimitedText := cond;
+  SetElementEditValues(c, 'CTDA\Function', parts[0]);  // first: it decides the parameter types
+  SetElementEditValues(c, 'CTDA\Type', '10000000');
+  SetElementEditValues(c, 'CTDA\Comparison Value', parts[2]);
+  SetElementEditValues(c, 'CTDA\Parameter #1', Value(parts[1]));
+  SetElementEditValues(c, 'CTDA\Run On', 'Reference');
+  SetElementEditValues(c, 'CTDA\Reference', '00000014');
+  parts.Free;
+end;
+
 procedure OpMenu(edid, id, text, sub, cond: string);
 var
-  r, items, it, c, conds, tmpl: IInterface;
-  parts: TStringList;
+  r, items, it, tmpl: IInterface;
 begin
   r := Rec(edid);
   if not Assigned(r) then
@@ -562,10 +634,6 @@ begin
       it := ElementAssign(items, 0, tmpl, False);
   end;
   if cond <> '-' then begin
-    conds := ElementByPath(it, 'Conditions');
-    while ElementCount(conds) > 1 do
-      Remove(ElementByIndex(conds, 1));
-    RemoveElement(ElementByIndex(conds, 0), 'CIS2');
     RemoveElement(it, 'RNAM');
     RemoveElement(it, 'UNAM');
     RemoveElement(it, 'VNAM');
@@ -581,25 +649,34 @@ begin
   else
     // runs the item's script event and shows the same menu again, ready for the next choice
     SetElementEditValues(it, 'ANAM', 'Submenu - Force Redraw');
-  if cond <> '-' then begin
-    parts := TStringList.Create;
-    parts.Delimiter := ':';
-    parts.StrictDelimiter := True;
-    parts.DelimitedText := cond;
-    c := ElementByIndex(ElementByPath(it, 'Conditions'), 0);
-    if not Assigned(c) then begin
-      Err('cannot add a condition to ' + edid + ' item ' + id);
-      parts.Free;
-      Exit;
-    end;
-    SetElementEditValues(c, 'CTDA\Function', parts[0]);  // first: it decides the parameter types
-    SetElementEditValues(c, 'CTDA\Type', '10000000');
-    SetElementEditValues(c, 'CTDA\Comparison Value', parts[2]);
-    SetElementEditValues(c, 'CTDA\Parameter #1', Value(parts[1]));
-    SetElementEditValues(c, 'CTDA\Run On', 'Reference');
-    SetElementEditValues(c, 'CTDA\Reference', '00000014');
-    parts.Free;
+  if cond <> '-' then
+    SetCondition(it, cond, edid + ' item ' + id);
+end;
+
+// A terminal body text item, cut down from MenuTemplate's first one (which has a condition) like menu items are.
+procedure OpBody(edid, text, cond: string);
+var
+  r, items, it, tmpl: IInterface;
+begin
+  r := Rec(edid);
+  if not Assigned(r) then
+    Exit;
+  r := InCur(r);
+  tmpl := nil;
+  if cond <> '-' then
+    tmpl := ElementByIndex(ElementByPath(FindAny(MenuTemplate), 'Body Text'), 0);
+  items := ElementByPath(r, 'Body Text');
+  if Assigned(items) then
+    it := ElementAssign(items, HighInteger, tmpl, False)
+  else begin
+    items := Add(r, 'Body Text', True);
+    it := ElementByIndex(items, 0);
+    if Assigned(tmpl) then
+      it := ElementAssign(items, 0, tmpl, False);
   end;
+  SetElementEditValues(it, 'BTXT', text);
+  if cond <> '-' then
+    SetCondition(it, cond, edid + ' body text');
 end;
 
 function ScriptEntry(r: IInterface; scriptName: string): IInterface;
@@ -828,8 +905,10 @@ begin
     else if op = 'prune' then OpPrune(Field(line, 1), Field(line, 2))
     else if op = 'prunerecords' then OpPruneRecords(Field(line, 1))
     else if op = 'items' then OpItems(Field(line, 1), Field(line, 2))
+    else if op = 'formlist' then OpFormList(Field(line, 1), Field(line, 2))
     else if op = 'menuclear' then OpMenuClear(Field(line, 1))
     else if op = 'menu' then OpMenu(Field(line, 1), Field(line, 2), Field(line, 3), Field(line, 4), Field(line, 5))
+    else if op = 'body' then OpBody(Field(line, 1), Field(line, 2), Field(line, 3))
     else if op = 'script' then OpScript(Field(line, 1), Field(line, 2))
     else if op = 'propremove' then OpPropRemove(Field(line, 1), Field(line, 2), Field(line, 3))
     else if op = 'prop' then OpProp(Field(line, 1), Field(line, 2), Field(line, 3), Field(line, 4), Field(line, 5))

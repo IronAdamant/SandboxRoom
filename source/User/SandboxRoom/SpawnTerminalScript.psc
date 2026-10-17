@@ -16,6 +16,8 @@ ObjectReference[] Property SpawnPoints Auto Const
 {Arena: where spawns may land (one picked at random for each spawn).}
 SandboxRoom:ArenaZoneScript Property Zone Auto Const
 {Arena: the zone that freezes and wakes the spawns.}
+Faction Property ForceFaction Auto Const
+{Spawns leave all their factions for this one (the hostile Brotherhood and Institute: always the player's enemies).}
 
 int Property MaxCount = 10 AutoReadOnly
 int Property MenuRemoveAll = 900 AutoReadOnly
@@ -55,6 +57,11 @@ Function SpawnOne(Form akSpawn)
 	; Spread spawns out a little so a group does not stack on one point.
 	ObjectReference spawned = point.PlaceAtMe(akSpawn, abForcePersist = true)
 	spawned.MoveTo(point, Utility.RandomFloat(-spread, spread), Utility.RandomFloat(-spread, spread), 0.0)
+	If ForceFaction
+		Actor a = spawned as Actor
+		a.RemoveFromAllFactions()
+		a.AddToFaction(ForceFaction)
+	EndIf
 	Debug.Trace(self + " SandboxRoom spawn: placed " + spawned + " at " + point + " (zone " + Zone + ")")
 	If Zone
 		Zone.Track(spawned)

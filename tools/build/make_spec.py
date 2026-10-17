@@ -13,6 +13,8 @@ Coordinates are game units (about 1.4 cm each); +X is east, +Y north. One interi
     arena (south of the lobby, two doors):      terrain; spawns wake up while the player is inside
     Perks & Stats (north of the hall, a door):  terminals for S.P.E.C.I.A.L., perks, perk points, level and faction
                                                 relations (since 1.1)
+    Hack and Lock Practice (west of the hall,   locked chests on a table and locked terminals, Novice to Master,
+    a door):                                    and a chest of bobby pins
 
 Signs are generated models (tools/build/signs.py renders their textures): make_spec records every sign it places
 in work/signs.json.
@@ -33,8 +35,9 @@ SIGNS_JSON = REPO / 'work' / 'signs.json'
 MAIN = 'Sandbox Room.esp'
 AUTHOR = 'Deadmansprice'
 DESCRIPTION = ('Sandbox Room: a testing facility reached by holotape. Refilling storage, crafting stations, a target '
-               'range with holographic targets, an arena whose enemies wake when you walk in, and a Perks & Stats '
-               'room for S.P.E.C.I.A.L., perks, level and faction relations. Requires all DLC.')
+               'range with holographic targets, an arena whose enemies wake when you walk in, a Perks & Stats '
+               'room for S.P.E.C.I.A.L., perks, level and faction relations, and a Hack and Lock Practice room. '
+               'Requires all DLC.')
 # One plugin for everything (since 1.0): the DLC content is part of Sandbox Room.esp, so it needs these masters, in
 # load order. (Before, each DLC had its own add-on plugin; most copies of the game now include all the DLC.)
 DLC_MASTERS = ['DLCRobot.esm', 'DLCCoast.esm', 'DLCworkshop02.esm', 'DLCworkshop03.esm', 'DLCNukaWorld.esm']
@@ -50,6 +53,12 @@ STAIRS_TOP_END = 64                        # HitExtIntStairs1Story01: its top pl
 SWAP = 'swap=@HitInstituteThemeSwap01'
 FLOOR_BASE = '@HitFloorSolidFull01'
 LIGHT_BASE, LIGHT_RADIUS = '@InstituteLightWhite01NS', 1100
+# The cell's directional ambient light (from each of the six sides), copied from the Institute lighting template as the
+# game's Institute cells do: a cell never inherits it. The cell's default, full white from every side, lit everything
+# evenly, flattening faces and drowning out face lights (a player report after 1.1).
+DIRECTIONAL_AMBIENT = {'X+': (20, 23, 27), 'X-': (23, 28, 32), 'Y+': (24, 28, 31), 'Y-': (22, 27, 31),
+                       'Z+': (19, 19, 23), 'Z-': (27, 32, 37)}
+CELL_INHERITS = '11111111111'  # everything else from the template (XCLL\Inherits, bit 0 first)
 
 # Main hall bounds. West to east: crafting and chests, the open arena (ARENA_X to LANE_X), the firing lane under
 # the galleries (LANE_X to BAY_X) and the target bays (BAY_X to X1).
@@ -80,19 +89,40 @@ PERKS_SIGN_Z = 420                         # over the door; at the ARENA sign's 
 PERKS_TERMINAL_Y, PERKS_TERMINAL_PITCH = PY1 - 106, 160
 SPECIAL = ['Strength', 'Perception', 'Endurance', 'Charisma', 'Intelligence', 'Agility', 'Luck']
 SPECIAL_MAX = 15                           # SpecialTerminalScript.MaxValue
-PERK_POINTS_ADD, PERK_POINTS_REMOVE = [1, 5, 10, 25], [1, 5, 10]   # items N and 100 + N
+PERK_POINTS_ADD = [1, 5, 10, 25]           # item N adds N (taking points away does not work: 1.1 testing)
 LEVELS_UP = [1, 5, 10, 25, 50]
-# (menu text, faction editor IDs): story factions on one terminal, hostile groups on another
+# (menu text, faction editor IDs): story factions on one terminal, hostile groups on another. Each faction submenu
+# offers the relations it is not in now, and the terminal shows the current one (a global per group, SBR_PSState_*,
+# kept by FactionTerminalScript and read back from the game by FactionStatusScript). The hostile groups get no
+# Neutral: all their people are Very Aggressive, which attacks neutrals on sight, so neutral plays out as hostile.
 MAJOR_FACTIONS = [('Minutemen', ['MinutemenFaction']), ('Brotherhood of Steel', ['BrotherhoodofSteelFaction']),
                   ('Railroad', ['RailroadFaction']), ('Institute', ['InstituteFaction'])]
 HOSTILE_GROUPS = [('Raiders', ['RaiderFaction']), ('Gunners', ['GunnerFaction']),
                   ('Super Mutants', ['SuperMutantFaction', 'MutantHoundFaction']),
                   ('Children of Atom', ['ChildrenOfAtomFaction']), ('Triggermen', ['TriggermanFaction']),
                   ('The Forged', ['TheForgedFaction']), ('Synths', ['SynthFaction']),
-                  ('Rust Devils', ['DLC01RaiderFaction']), ('Mechanist robots', ['DLC01MechanistFaction']),
+                  ('Rust Devils', ['DLC01RaiderFaction']), ('Mechanist robots', ['DLC01MechanistFaction', 'DLC01MechBotFaction']),
                   ('Trappers', ['DLC03TrapperFaction', 'DLC03TrapperFactionCoast', 'DLC03TrapperFactionWoods']),
                   ('Disciples', ['DLC04GangDisciplesFaction']), ('Operators', ['DLC04GangOperatorsFaction']),
                   ('The Pack', ['DLC04GangPackFaction'])]
+# Hack and Lock Practice: a room west of the hall, through a door in the hall's west wall between the Misc cabinets
+# (up to y -124) and the Aid cabinets (from y 302), behind the arrival point. Footlockers stand on a row of Institute
+# tables along its north wall and standing terminals against its south wall, each row running Novice to Master away
+# from the door, all empty. The chest at the door end of the table is unlocked and holds bobby pins (refilled like the
+# cabinets). Picked or hacked, each locks again at its level (RelockScript).
+HX0, HX1, HY0, HY1 = X0 - 4 * G, X0, -G, 2 * G
+HACK_DOOR_Y = (HY0 + HY1) // 2
+HACK_TITLE = 'Hack and Lock Practice'
+# the lock levels in XLOC, as the game reads them (xEdit names them right; 0/25/50/75 showed a tier low in 1.1 testing)
+LOCK_LEVELS = [('Novice', 25), ('Advanced', 50), ('Expert', 75), ('Master', 100)]
+TABLE, TABLE_LEN, TABLE_DEPTH, TABLE_TOP = '@InstituteTable01', 152, 71, 56     # long side on local X
+TABLES = 3
+# the game's footlocker (Props\FootLocker01.nif, 54 x 22 x 23, long side on local X) is only in a QA container
+FOOTLOCKER, CHEST_PITCH = '@QAMiscComponentChest', 88
+FOOTLOCKER_SOUNDS = ('@DRScTrunkIndustrialOpen', '@DRScTrunkIndustrialClose')  # DN116MilitaryBotChest's
+BOBBY_PIN_COUNT = 100
+HACK_TERMINAL_Y, HACK_TERMINAL_PITCH = HY0 + 106, 160
+
 ARENA_SPAWNS = [(0, -2700), (1500, -2550), (3000, -2700), (600, -3700), (2300, -3700), (3700, -3600),
                 (-700, -3500), (1500, -4500), (2900, -4800)]
 # (base, x, y, z, rotation): mounds, outcrops, boulders and dead trees; the spawn points stay in the open
@@ -187,8 +217,9 @@ SECTIONS = [
     ('Aid', 'AID', 'W', 520, ['Medicine and Chems', 'Food', 'Drinks']),
     ('Misc', 'MISCELLANEOUS', 'W', -380, ['Junk', 'Magazines', 'Bobbleheads']),
 ]
-# Add-on cabinet names per section ("Far Harbor Weapons and Ammo").
-DLC_SECTION_NAMES = {'Weapons': 'Weapons and Ammo', 'Apparel': 'Apparel', 'Mods': 'Mods',
+# Add-on cabinet names per section ("Far Harbor Weapons").
+# The add-ons' ammo goes in the base game Ammo cabinet, so their Weapons cabinets hold weapons only.
+DLC_SECTION_NAMES = {'Weapons': 'Weapons', 'Apparel': 'Apparel', 'Mods': 'Mods',
                      'PowerArmor': 'Power Armor', 'Aid': 'Aid', 'Misc': 'Miscellaneous'}
 
 
@@ -219,6 +250,11 @@ def load_items() -> list[Item]:
     return out
 
 
+BOBBY_PIN = Item('Fallout4.esm', '00000A', 'MISC', 'BobbyPin', 'Bobby Pin', 0, '', set(), 0)
+
+# NPC and quest weapons that look like player ones: a quest's nuke on the Broadsider model, the mini nuke a Suicider
+# super mutant carries, Nuka-World's fake alien blaster turret
+SKIP_WEAPONS = {'MS02NukeMissileFar', 'FatManBomb', 'DLC04FakeAlienBlasterTurret'}
 SKIP_WORDS = ('test', 'dummy', 'donotuse', 'do not use', 'unused', 'debug', 'zzz', 'cut ')
 
 
@@ -227,6 +263,7 @@ def usable(i: Item) -> bool:
     return bool(i.name) and not i.flags & 0x4 and not any(w in text for w in SKIP_WORDS)
 
 
+AMMO_LIST = 'SBR_AmmoList'
 AMMO_COUNTS = {'AmmoFusionCore': 10, 'AmmoFatManMiniNuke': 25, 'AmmoMissile': 50, 'AmmoCannonBall': 25,
                'AmmoAlienBlaster': 500, 'AmmoFlamerFuel': 2000}
 
@@ -246,7 +283,10 @@ def chest_of(i: Item) -> tuple[str, int] | None:
     """Which cabinet category an item goes in (see SECTIONS), and how many of it."""
     kw = i.keywords
     if i.sig == 'WEAP':
-        if not i.model or i.edid.startswith(('Unarmed', 'Workshop', 'Turret')):
+        # workshop-internal and placeholder weapons: e.g. the Contraptions firework mortar's shells (DLC05Workshop...
+        # "Mortar"), the Creation Club VR workshop's VRWorkshopShared_..._NonPlayable
+        if (not i.model or i.edid.startswith(('Unarmed', 'Turret')) or i.edid in SKIP_WEAPONS
+                or any(w in i.edid.lower() for w in ('workshop', 'nonplayable'))):
             return None
         if kw & EXPLOSIVE_TYPES or any(w in i.name for w in ('Grenade', 'Mine')):
             return 'Explosives', 1
@@ -371,8 +411,8 @@ DLCS = [
 SPAWN_MENUS = {
     'Humans': [('Raider', 'LCharRaiderMixedEquipment'), ('Gunner', 'LCharGunnerMixedWeapons'),
                ('Triggerman', 'LCharTriggerman'), ('Children of Atom', 'LCharChildrenofAtom'),
-               ('Scavenger', 'LCharScavenger'), ('Brotherhood of Steel (hostile)', 'LCharHostileBOS'),
-               ('Institute (hostile)', 'LCharHostileINST')],
+               ('Scavenger', 'LCharScavenger'), ('Brotherhood of Steel (hostile)', 'SBR_LCharHostileBOS'),
+               ('Institute (hostile)', 'SBR_LCharHostileINST')],
     'Synths and Robots': [('Synth', 'LCharSynth'), ('Synth courser', 'LCharSynthCourser'),
                           ('Protectron', 'LCharProtectron'), ('Assaultron', 'LCharAssaultron'),
                           ('Sentry bot', 'LCharSentryBot'), ('Mr. Gutsy', 'LCharMrGutsy'),
@@ -402,6 +442,12 @@ SPAWN_MENUS = {
 STATIONS = [('@workbenchWeaponsA', -1150, FACE_SOUTH), ('@WorkbenchArmorA', -850, FACE_SOUTH),
             ('@WorkbenchChemistryA', -550, FACE_SOUTH), ('@WorkbenchCookingStove', -250, FACE_SOUTH),
             ('@WorkbenchPowerArmor', 450, FACE_NORTH)]
+
+# The game's hostile Brotherhood and Institute lists spawn nothing until the story turns those factions hostile (100%
+# chance none, lifted by a global). The room spawns from copies without the gate, and its spawns leave their own
+# factions for HOSTILE_FACTION (enemy of the player), so they stay hostile whatever the Factions terminal says.
+HOSTILE_SPAWNS = {'SBR_LCharHostileBOS': 'LCharHostileBOS', 'SBR_LCharHostileINST': 'LCharHostileINST'}
+HOSTILE_FACTION = 'SBR_HostileFaction'
 
 MENU_REMOVE_ALL, MENU_KILL_ALL = 900, 901
 SPAWN_COUNT_MAX = 10                       # arena "how many" menus offer 1 to this many (SpawnTerminalScript.MaxCount)
@@ -433,13 +479,17 @@ class Spec:
         opts = ' '.join(filter(None, ['persistent' if persistent else '', opts]))
         self.op('ref', edid, CELL, base, f'{x} {y} {z}', f'0 0 {rz}', opts or '-')
 
-    def chest(self, edid, name, items):
-        """An infinite chest (a filing cabinet): whatever is taken is put back."""
-        self.op('copy', CABINET, edid)
+    def chest(self, edid, name, items, base=CABINET):
+        """An infinite chest (a filing cabinet unless told otherwise): whatever is taken is put back."""
+        self.op('copy', base, edid)
         self.op('set', edid, 'FULL', name)
         self.op('items', edid, ' ; '.join(f'{i.token}*{n}' for i, n in items))
         self.op('set', edid, r'DATA\Flags', '0')  # no respawn
         self.op('script', edid, 'SandboxRoom:InfiniteChestScript')
+        if any(i.sig == 'WEAP' for i, _ in items):
+            # the game puts a few rounds of ammo in with every weapon in a container: clear them out (the Ammo
+            # cabinet has it all)
+            self.op('prop', edid, 'SandboxRoom:InfiniteChestScript', 'Purge', 'Object', '@' + AMMO_LIST)
 
     def sign(self, text: str, kind: str) -> str:
         """The static for a sign showing text, made once per plugin; returns its token. Kinds: 'Label' and 'Header'
@@ -596,10 +646,15 @@ def hall(s: Spec):
     s.op('set', CELL, 'DATA', '1')  # Is Interior (the sky and sky lighting of the first versions are gone)
     s.op('set', CELL, 'XCIM', '@InstituteImageSpaceF4New')
     s.op('set', CELL, 'LTMP', '@InstituteLightingTemplateNew')
+    s.op('set', CELL, r'XCLL\Inherits', CELL_INHERITS)
+    for side, rgb in DIRECTIONAL_AMBIENT.items():
+        for channel, v in zip(('Red', 'Green', 'Blue'), rgb):
+            s.op('set', CELL, rf'XCLL\Directional Ambient Lighting Colors\Directional\{side}\{channel}', v)
     slab_grid(s, 'SBR_Floor', X0, X1, Y0, Y1, 0, big=True)
-    wall_ring(s, 'SBR_Hall', X0, X1, Y0, Y1, doors={'S': [HALL_DOOR_X], 'N': [PERKS_DOOR_X]})
+    wall_ring(s, 'SBR_Hall', X0, X1, Y0, Y1, doors={'S': [HALL_DOOR_X], 'N': [PERKS_DOOR_X], 'W': [HACK_DOOR_Y]})
     door(s, 'SBR_WingDoor', HALL_DOOR_X, Y0, along_x=True)
     door(s, 'SBR_PerksDoor', PERKS_DOOR_X, Y1, along_x=True)
+    door(s, 'SBR_HackDoor', X0, HACK_DOOR_Y, along_x=False)
     lights = [(x, y) for x in range(X0 + 384, LANE_X, 768) for y in (-512, 512)]
     lights += [(LANE_X + G, -512), (LANE_X + G, 512)]
     lights += [(BAY_X + 768, Y0 + BAY_WIDTH * n + BAY_WIDTH // 2) for n in range(len(BAYS))]
@@ -833,21 +888,55 @@ def ps_terminal(s: Spec, edid: str, title: str, text: str):
     s.terminal(edid, f'{PS_TITLE}: {title}', f'{PS_TITLE.upper()}\n{title.upper()}\n{text}')
 
 
-def faction_terminal(s: Spec, prefix: str, title: str, text: str, groups: list) -> str:
-    """A terminal with a submenu per faction (or group of factions): friendly, neutral or hostile."""
-    top, sc = prefix + 'Terminal', 'SandboxRoom:FactionTerminalScript'
+RELATIONS = {1: 'Friendly', 2: 'Neutral', 3: 'Hostile'}  # menu item ID = state value (FactionTerminalScript)
+RELATION_TEXT = {1: 'they leave you alone', 2: 'they ignore you unless provoked', 3: 'they attack on sight'}
+
+
+def faction_terminal(s: Spec, prefix: str, title: str, text: str, groups: list, states: list,
+                     all_name: str = '') -> str:
+    """A terminal with a submenu per faction (or group of factions), setting its relation to the player: one of
+    states (RELATIONS keys). The top menu shows each group's relation ("Raiders [Hostile]"), its submenu shows it
+    over the menu and offers the others, all through conditions on the group's state global (0 until
+    FactionStatusScript has read it from the game: then everything shows). all_name: a last submenu that sets
+    every group at once, without a state of its own."""
+    top, sc, ss = prefix + 'Terminal', 'SandboxRoom:FactionTerminalScript', 'SandboxRoom:FactionStatusScript'
     ps_terminal(s, top, title, text)
-    for n, (name, factions) in enumerate(groups, 1):
+    explain = ' '.join(f'{RELATIONS[v]}: {RELATION_TEXT[v]}.' for v in states)
+    globs = []
+    for name, _ in groups:
+        glob = f'SBR_PSState_{key_of(name)}'
+        globs.append(glob)
+        s.op('new', 'GLOB', glob)
+        s.op('set', glob, 'FNAM', 'Short')
+        s.op('set', glob, 'FLTV', '0')
+    entries = [(name, factions, [glob]) for (name, factions), glob in zip(groups, globs)]
+    if all_name:
+        entries.append((all_name, [f for _, fs in groups for f in fs], globs))
+    for n, (name, factions, own) in enumerate(entries, 1):
         sub = prefix + '_' + key_of(name)
-        ps_terminal(s, sub, name, 'Friendly: they leave you alone. Neutral: they ignore you unless provoked. '
-                                  'Hostile: they attack on sight.')
-        for item, state in ((1, 'Friendly'), (2, 'Neutral'), (3, 'Hostile')):
-            s.op('menu', sub, item, state, '-', '-')
+        ps_terminal(s, sub, name, explain)
+        if len(own) == 1:
+            cond = lambda v: f'GetGlobalValue:@{own[0]}:{v}'
+            for v, state in RELATIONS.items():
+                s.op('body', sub, f'{name}: {state.upper()}', cond(v))
+                s.op('menu', top, n, f'{name} [{state}]', '@' + sub, cond(v))
+            s.op('menu', top, n, name, '@' + sub, cond(0))
+            for v in [0] + list(RELATIONS):
+                for item in states:
+                    if item != v:
+                        s.op('menu', sub, item, RELATIONS[item], '-', cond(v))
+        else:
+            s.op('menu', top, n, name, '@' + sub, '-')
+            for item in states:
+                s.op('menu', sub, item, RELATIONS[item], '-', '-')
         s.op('script', sub, sc)
         s.op('prop', sub, sc, 'Factions', 'Array of Object', ','.join('@' + f for f in factions))
+        s.op('prop', sub, sc, 'States', 'Array of Object', ','.join('@' + g for g in own))
         s.op('prop', sub, sc, 'PlayerFaction', 'Object', '@PlayerFaction')
         s.op('prop', sub, sc, 'GroupName', 'String', name)
-        s.op('menu', top, n, name, '@' + sub, '-')
+    s.op('script', top, ss)
+    s.op('prop', top, ss, 'Factions', 'Array of Object', ','.join('@' + fs[0] for _, fs in groups))
+    s.op('prop', top, ss, 'States', 'Array of Object', ','.join('@' + g for g in globs))
     return top
 
 
@@ -910,12 +999,10 @@ def perks_room(s: Spec, chart: dict):
 
     s.comment('perk points and level')
     points = 'SBR_PSPointsTerminal'
-    ps_terminal(s, points, 'Perk Points', 'Add unspent perk points, or take some away (taking more than you have '
-                                          'is not prevented).')
+    ps_terminal(s, points, 'Perk Points', 'Add unspent perk points. They cannot be taken away again: spend them, or '
+                                          'load a save.')
     for n in PERK_POINTS_ADD:
         s.op('menu', points, n, f'Add {n}', '-', '-')
-    for n in PERK_POINTS_REMOVE:
-        s.op('menu', points, 100 + n, f'Take away {n}', '-', '-')
     s.op('script', points, 'SandboxRoom:PerkPointsTerminalScript')
     level = 'SBR_PSLevelTerminal'
     ps_terminal(s, level, 'Level', 'Level up by awarding the XP it takes; each level brings its perk point. Levels '
@@ -927,10 +1014,11 @@ def perks_room(s: Spec, chart: dict):
     s.comment('faction relations: the story factions, and the hostile groups (plus all of them at once)')
     factions = faction_terminal(s, 'SBR_PSFactions', 'Factions',
                                 'Story quests can change these again, and turning a story faction friendly or '
-                                'hostile can break its quests: save first.', MAJOR_FACTIONS)
+                                'hostile can break its quests: save first.', MAJOR_FACTIONS, [1, 2, 3])
     groups = faction_terminal(s, 'SBR_PSGroups', 'Hostile Groups',
-                              'Some places give their people a faction of their own, which keeps its attitude.',
-                              HOSTILE_GROUPS + [('All hostile groups', [f for _, fs in HOSTILE_GROUPS for f in fs])])
+                              'Some places give their people a faction of their own, which keeps its attitude. '
+                              'Friendly ones still fight back if you attack them. There is no neutral: these groups '
+                              'attack neutrals on sight.', HOSTILE_GROUPS, [1, 3], 'All hostile groups')
 
     terminals = [('SBR_PSSpecialTerminal', 'S.P.E.C.I.A.L.'), (top, 'Perks'), (points, 'Perk Points'),
                  (level, 'Level'), (factions, 'Factions'), (groups, 'Hostile Groups')]
@@ -938,6 +1026,53 @@ def perks_room(s: Spec, chart: dict):
         x = round(PERKS_DOOR_X + (k - (len(terminals) - 1) / 2) * PERKS_TERMINAL_PITCH)
         s.ref(term + 'Ref', '@' + term, x, PERKS_TERMINAL_Y, rz=FACE_SOUTH)
         label(s, term + 'Label', text, x, PERKS_TERMINAL_Y, 'S', 127, 34)
+
+
+def practice_room(s: Spec):
+    s.comment('Hack and Lock Practice: footlockers on a row of tables (bobby pins, then Novice to Master) and standing '
+              'terminals (Novice to Master), all empty; picked or hacked, each locks again (RelockScript)')
+    wall_ring(s, 'SBR_Practice', HX0, HX1, HY0, HY1, doors={'E': [HACK_DOOR_Y]})
+    slab_grid(s, 'SBR_PracticeFloor', HX0, HX1, HY0, HY1, 0, big=False)
+    cx = (HX0 + HX1) // 2
+    ceiling(s, 'SBR_Practice', HX0, HX1, HY0, HY1, [(cx + dx, HACK_DOOR_Y) for dx in (-256, 256)])
+    sign = s.sign(HACK_TITLE.upper(), 'Header')
+    s.ref('SBR_HeaderHackLock', sign, X0 + WALL_FACE + 1, HACK_DOOR_Y, PERKS_SIGN_Z, rz=SIGN_RZ['E'])
+    s.ref('SBR_HeaderHackLockInside', sign, HX0 + WALL_FACE + 1, HACK_DOOR_Y, HEADER_Z, rz=SIGN_RZ['E'])
+
+    table_y = HY1 - WALL_FACE - TABLE_DEPTH // 2 - 8
+    for k in range(TABLES):
+        s.ref(f'SBR_PracticeTable_{k}', TABLE, round(cx + (k - (TABLES - 1) / 2) * TABLE_LEN), table_y)
+    rs = 'SandboxRoom:RelockScript'
+    chests = [('SBR_BobbyPinChest', 'Bobby Pins', 'Bobby Pins', None)] + \
+             [(f'SBR_LockChest{lvl}', f'{HACK_TITLE}: {lvl}', lvl, n) for lvl, n in LOCK_LEVELS]
+    for k, (edid, name, text, level) in enumerate(chests):
+        x = round(cx + ((len(chests) - 1) / 2 - k) * CHEST_PITCH)  # from the door (east) end
+        if level is None:
+            s.chest(edid, name, [(BOBBY_PIN, BOBBY_PIN_COUNT)], base=FOOTLOCKER)
+        else:
+            s.op('copy', FOOTLOCKER, edid)
+            s.op('set', edid, 'FULL', name)
+            s.op('remove', edid, 'Items')
+            s.op('remove', edid, 'COCT')
+            s.op('set', edid, r'DATA\Flags', '0')
+            s.op('script', edid, rs)
+            s.op('prop', edid, rs, 'LockLevel', 'Int32', level)
+        s.op('set', edid, 'SNAM', FOOTLOCKER_SOUNDS[0])
+        s.op('set', edid, 'QNAM', FOOTLOCKER_SOUNDS[1])
+        s.ref(edid + 'Ref', '@' + edid, x, table_y + 8, TABLE_TOP, rz=FACE_SOUTH,
+              opts='' if level is None else f'lock={level}')
+        # the label stands at the table's front edge, clear of the lid
+        label(s, edid + 'Label', text, x, table_y + 8, 'S', TABLE_TOP, TABLE_DEPTH // 2 + 8)
+
+    for k, (lvl, n) in enumerate(LOCK_LEVELS):
+        term = f'SBR_HackTerminal{lvl}'
+        s.terminal(term, f'{HACK_TITLE}: {lvl}', f'{HACK_TITLE.upper()}\n{lvl.upper()} TERMINAL\nHacked. There is '
+                   'nothing on this terminal: it locks again when you step away, ready for the next try.')
+        s.op('script', term, rs)
+        s.op('prop', term, rs, 'LockLevel', 'Int32', n)
+        x = round(cx + ((len(LOCK_LEVELS) - 1) / 2 - k) * HACK_TERMINAL_PITCH)
+        s.ref(term + 'Ref', '@' + term, x, HACK_TERMINAL_Y, rz=FACE_NORTH, opts=f'lock={n}')
+        label(s, term + 'Label', lvl, x, HACK_TERMINAL_Y, 'N', 127, 34)
 
 
 def dlc_items(chests: dict, d: Dlc, section: str) -> list:
@@ -981,6 +1116,8 @@ def spawn_terminal(s: Spec, prefix: str, title: str, welcome: str, menus: dict, 
             count = prefix + 'Count_' + key_of(enemy)
             s.terminal(count, title, f'{title.upper()}\n{enemy}: how many? Each lands at a random spot in the arena.')
             s.spawn_script(count, (), True, lvln)
+            if lvln in HOSTILE_SPAWNS:
+                s.op('prop', count, 'SandboxRoom:SpawnTerminalScript', 'ForceFaction', 'Object', '@' + HOSTILE_FACTION)
             s.op('menu', sub, i, enemy, '@' + count, '-')
         s.op('menu', top, n, group, '@' + sub, '-')
     s.op('menu', top, MENU_KILL_ALL, 'Kill everything spawned', '-', '-')
@@ -990,9 +1127,25 @@ def spawn_terminal(s: Spec, prefix: str, title: str, welcome: str, menus: dict, 
     label(s, top + 'Label', text, x, y, 'N', 127, 34)
 
 
+def hostile_spawns(s: Spec):
+    s.comment("hostile Brotherhood and Institute spawns: the game's lists without their story gate, and the faction "
+              'the spawns are moved to (an enemy of the player and nobody else)')
+    s.op('new', 'FACT', HOSTILE_FACTION)
+    s.op('set', HOSTILE_FACTION, 'FULL', 'Sandbox Room Hostiles')
+    s.op('remove', HOSTILE_FACTION, 'Relations')  # one relation, set by index (by name, each set adds one)
+    s.op('set', HOSTILE_FACTION, r'Relations\[0]\Faction', '@PlayerFaction')
+    s.op('set', HOSTILE_FACTION, r'Relations\[0]\Group Combat Reaction', 'Enemy')
+    for edid, source in HOSTILE_SPAWNS.items():
+        s.op('copy', '@' + source, edid)
+        s.op('set', edid, 'LVLD', '0')
+        s.op('remove', edid, 'LVLG')
+
+
 def storage(s: Spec, chests: dict):
     s.comment('storage: signed sections of filing cabinets along the walls (see SECTIONS); whatever is taken from '
               'a cabinet is put straight back. The add-on plugins fill their own slots')
+    s.op('new', 'FLST', AMMO_LIST)  # every ammo type, cleared out of the weapon cabinets
+    s.op('formlist', AMMO_LIST, ','.join(i.token for i in load_items() if i.sig == 'AMMO'))
     for key, text, wall, centre, _ in SECTIONS:
         slots = section_slots(key, chests)
         header(s, f'SBR_Header{key}', text, wall, centre, len(slots) * SLOT_PITCH)
@@ -1058,10 +1211,12 @@ def main_plugin(s: Spec, chests: dict):
               'row against its south wall, base game first, then one per add-on (placed by the add-on plugins)')
     s.ref('SBR_HeaderAIArena', s.sign('ARENA', 'Header'), HALL_DOOR_X, Y0 + WALL_FACE + 1, AI_SIGN_Z,
           rz=SIGN_RZ['N'])
+    hostile_spawns(s)
     spawn_terminal(s, 'SBR_AISpawn', 'Sandbox Room Arena',
                    'Spawns wake up when you enter the arena and freeze when you leave.', SPAWN_MENUS,
                    AI_TERMINAL_X, AI_TERMINAL_Y, 'Base Game')
     perks_room(s, load_perks())
+    practice_room(s)
 
 
 def dlc_content(s: Spec, d: Dlc, chests: dict):
@@ -1086,7 +1241,8 @@ def main():
     chests: dict = {}
     for i in load_items():
         if usable(i) and (where := chest_of(i)):
-            chests.setdefault((i.file, where[0]), []).append((i, where[1]))
+            # all ammo, add-ons' included, goes in the one Ammo cabinet
+            chests.setdefault(('Fallout4.esm' if where[0] == 'Ammo' else i.file, where[0]), []).append((i, where[1]))
     s = Spec()
     s.lines.append('# Generated by tools/build/make_spec.py - do not edit by hand')
     main_plugin(s, chests)
