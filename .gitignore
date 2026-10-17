@@ -3,3 +3,4 @@ work/
 config.local.*
 __pycache__/
 /dist/
+/docs/private logs and player reports/

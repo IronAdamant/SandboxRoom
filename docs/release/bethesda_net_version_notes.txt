@@ -1,0 +1,8 @@
+1.1.0
+- NEW: Perks & Stats room: S.P.E.C.I.A.L., perks, perk points, level and faction relations.
+- NEW: Hack and Lock Practice room: locks and terminals, Novice to Master, that relock after every try.
+- Xbox: signs no longer show pink.
+- Characters are lit properly in the room (faces were flat).
+- Arena: hostile Brotherhood of Steel and Institute now spawn and always fight you.
+- Weapon cabinets no longer hold stray ammo; all ammo is in the Ammo cabinet.
+- Removed a few NPC and quest weapons from the cabinets.

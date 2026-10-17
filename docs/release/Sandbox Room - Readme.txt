@@ -30,6 +30,11 @@ WHAT'S INSIDE
                      hostile, one at a time or all at once (they attack neutrals on sight, so no neutral)
   Story quests can change faction relations again, and turning a story faction friendly or hostile can break its
   quests: save first.
+- Hack and Lock Practice (new in 1.1, through the door under its sign on the west wall, behind you on arrival):
+  footlockers locked Novice, Advanced, Expert and Master, and terminals locked the same. Pick or hack one and it
+  locks itself again a few seconds after you step away, ready for the next try. A footlocker of bobby pins that
+  never runs out. Advanced and above need the Locksmith or Hacker perk, as anywhere else: the Perks terminal can
+  add it.
 
 PLAYING FAIR
 Everything in the room is free. Save before you teleport in, and load that save if you don't want to keep what
@@ -48,7 +53,15 @@ Fallout 4, next-gen or old-gen, with all the DLC: Automatron, Far Harbor, Nuka-W
 and Vault-Tec Workshop (Game of the Year / Anniversary editions include them). No F4SE. Light plugin (ESL).
 
 VERSION HISTORY
-1.1.0  Perks & Stats room: S.P.E.C.I.A.L., perks, perk points, level and faction relations.
+1.1.0  New: Perks & Stats room (S.P.E.C.I.A.L., perks, perk points, level, faction relations; the faction menus
+       show where each faction stands).
+       New: Hack and Lock Practice room (locks and terminals, Novice to Master, that lock again after each try).
+       Xbox: the signs no longer show pink.
+       Characters are lit properly in the room (it was lit evenly from every side, which flattened faces).
+       Arena: the hostile Brotherhood of Steel and Institute now spawn, and always fight you.
+       Weapon cabinets no longer hold stray ammo; all ammo, the DLC's included, is in the Ammo cabinet.
+       Removed a few NPC and quest weapons from the cabinets (firework mortar shells, a quest nuke, the
+       Suicider's mini nuke, a turret's alien blaster, placeholders).
 1.0.0  First release.
 
 UNINSTALLING

@@ -50,7 +50,7 @@ def fomod_info(version: str) -> str:
   <Name>Sandbox Room</Name>
   <Author>{AUTHOR}</Author>
   <Version>{escape(version)}</Version>
-  <Description>A testing facility reached by holotape: crafting stations, never-empty cabinets, a target range, an arena and a Perks &amp; Stats room.</Description>
+  <Description>A testing facility reached by holotape: crafting stations, never-empty cabinets, a target range, an arena, a Perks &amp; Stats room and a Hack and Lock Practice room.</Description>
 </fomod>
 '''
 
