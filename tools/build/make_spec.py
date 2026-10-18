@@ -77,6 +77,12 @@ WING_DOORS_X = [128, 1152]
 AI_TERMINAL_Y = LY0 + 106                  # against the lobby's south wall, facing the hall door
 AI_TERMINAL_X = 310                        # base game's; the add-ons' follow at 220 apart (Dlc.ai_terminal_x),
                                            # the row centred on the hall door between the two arena doors
+# Arena rounds (ArenaZoneScript): the player cannot die in the arena; going down ends the round, the enemies freeze
+# back at their spawn points, healed, and the next round starts ROUND_COUNTDOWN seconds after the player is up. The
+# holotape's safety net (SafetyNetScript, off by default) does the same anywhere: going down brings the player to the
+# room, healed.
+ROUND_COUNTDOWN = 13
+SAFETY_NET = 'SBR_SafetyNet'
 BALCONY_X0, BALCONY_X1 = -1024, 3072       # arena balconies along its north wall, two cells deep
 
 # Perks & Stats (1.1): a small room north of the hall, through a door in the hall's north wall (between the power
@@ -457,6 +463,8 @@ HOLOTAPE_WELCOME = (
     'SANDBOX ROOM\n'
     'TELEPORT IN: saves where you are and takes you to the Sandbox Room.\n'
     'TELEPORT OUT: takes you back to exactly where you were, with everything you are carrying.\n'
+    'SAFETY NET (off unless you turn it on): you cannot die, anywhere. Going down brings you to the Sandbox Room, '
+    'healed; Teleport Out then goes back to where you fell.\n'
     'Everything in the room is free and never runs out. Playing fair is up to you: save before you teleport in, '
     'and load that save if you do not want to keep what you took.')
 
@@ -798,6 +806,9 @@ def wing(s: Spec):
         s.ref(f'SBR_ArenaSpawn{k}', '@XMarkerHeading', x, y, 16, rz=k * 40 % 360, persistent=True)
     zone, zs = 'SBR_ArenaZone', 'SandboxRoom:ArenaZoneScript'
     s.ref(zone, '@XMarkerHeading', (AX0 + AX1) // 2, (AY0 + AY1) // 2, 16, persistent=True)
+    # its script data is written fresh on every build: removing a property in place (1.1, RescueMarker) left the
+    # data corrupt (xEdit's Check for Errors: propertyName "Expected 25699 bytes of data, found 366")
+    s.op('remove', zone, 'VMAD')
     s.op('script', zone, zs)
     for prop, v in (('MinX', AX0), ('MaxX', AX1), ('MinY', AY0), ('MaxY', AY1)):
         s.op('prop', zone, zs, prop, 'Float', v)
@@ -1127,6 +1138,25 @@ def spawn_terminal(s: Spec, prefix: str, title: str, welcome: str, menus: dict, 
     label(s, top + 'Label', text, x, y, 'N', 127, 34)
 
 
+def glob(s: Spec, edid: str):
+    """A whole-number global, starting at 0."""
+    s.op('new', 'GLOB', edid)
+    s.op('set', edid, 'FNAM', 'Short')
+    s.op('set', edid, 'FLTV', '0')
+
+
+def arena_rounds(s: Spec):
+    s.comment('arena rounds: the player cannot die in the arena (SafetyNetScript); a knockout resets the round')
+    s.op('remove', 'SBR_Main', 'Text Display Globals')  # a scoreboard's, in 1.1 test builds only
+    zone, zs = 'SBR_ArenaZone', 'SandboxRoom:ArenaZoneScript'
+    s.op('prop', zone, zs, 'SafetyNet', 'Object', '@SBR_Main')
+    s.op('prop', zone, zs, 'SpawnPoints', 'Array of Object',
+         ','.join(f'@SBR_ArenaSpawn{k}' for k in range(len(ARENA_SPAWNS))))
+    s.op('prop', zone, zs, 'CountdownSeconds', 'Float', ROUND_COUNTDOWN)
+    for prop, value in [('Health', '@Health'), ('Rads', '@Rads')]:
+        s.op('prop', zone, zs, prop, 'Object', value)
+
+
 def hostile_spawns(s: Spec):
     s.comment("hostile Brotherhood and Institute spawns: the game's lists without their story gate, and the faction "
               'the spawns are moved to (an enemy of the player and nobody else)')
@@ -1185,6 +1215,9 @@ def main_plugin(s: Spec, chests: dict):
     s.terminal('SBR_HolotapeTerminal', 'Sandbox Room', HOLOTAPE_WELCOME)
     s.op('menu', 'SBR_HolotapeTerminal', 1, 'Teleport In', '-', f'GetInCell:@{CELL}:0')
     s.op('menu', 'SBR_HolotapeTerminal', 2, 'Teleport Out', '-', f'GetInCell:@{CELL}:1')
+    glob(s, SAFETY_NET)
+    s.op('menu', 'SBR_HolotapeTerminal', 3, 'Safety net: turn on', '-', f'GetGlobalValue:@{SAFETY_NET}:0')
+    s.op('menu', 'SBR_HolotapeTerminal', 4, 'Safety net: turn off', '-', f'GetGlobalValue:@{SAFETY_NET}:1')
 
     s.op('new', 'NOTE', 'SBR_Holotape')
     for path, value in (('OBND\\X1', '-3'), ('OBND\\Y1', '-3'), ('OBND\\X2', '3'), ('OBND\\Y2', '3'),
@@ -1206,6 +1239,13 @@ def main_plugin(s: Spec, chests: dict):
     s.op('prop', 'SBR_Main', 'SandboxRoom:GiveHolotapeScript', 'PipBoys', 'Array of Object',
          '@Pipboy,@PipboyDusty,@PipboyVault81')  # handed out once the player has a Pip-Boy
     s.op('script', 'SBR_Main', 'SandboxRoom:SpawnTrackerScript')
+    sn = 'SandboxRoom:SafetyNetScript'  # keeps the player from dying in the arena, or anywhere with the safety net
+    s.op('script', 'SBR_Main', sn)
+    for prop, value in (('SBR_SafetyNet', '@' + SAFETY_NET), ('Zone', '@SBR_ArenaZone'), ('SandboxRoom', '@' + CELL),
+                        ('SBR_EntryMarker', '@SBR_EntryMarker'), ('SBR_ReturnMarker', '@SBR_ReturnMarker'),
+                        ('SBR_ReturnSaved', '@SBR_ReturnSaved'), ('Health', '@Health'), ('Rads', '@Rads')):
+        s.op('prop', 'SBR_Main', sn, prop, 'Object', value)
+    s.op('prop', 'SBR_HolotapeTerminal', 'SandboxRoom:HolotapeScript', 'SafetyNet', 'Object', '@SBR_Main')
 
     s.comment('arena: an "ARENA" sign over the hall\'s door to the lobby; in the lobby the terminals stand in a '
               'row against its south wall, base game first, then one per add-on (placed by the add-on plugins)')
@@ -1215,6 +1255,7 @@ def main_plugin(s: Spec, chests: dict):
     spawn_terminal(s, 'SBR_AISpawn', 'Sandbox Room Arena',
                    'Spawns wake up when you enter the arena and freeze when you leave.', SPAWN_MENUS,
                    AI_TERMINAL_X, AI_TERMINAL_Y, 'Base Game')
+    arena_rounds(s)
     perks_room(s, load_perks())
     practice_room(s)
 

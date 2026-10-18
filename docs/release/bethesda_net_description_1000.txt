@@ -1,14 +1,15 @@
 A clean testing facility, reached by holotape. No F4SE. Requires all DLC.
 
-Shortly after you get the Pip-Boy (alternative starts too), the (Sandbox Room) Holotape is added. Teleport In takes you to the room; Teleport Out returns you where you were.
+Shortly after you get the Pip-Boy, the (Sandbox Room) Holotape is added. Teleport In takes you (and your companions) to the room; Teleport Out returns you where you were.
 
-- Crafting stations, robot workbench, Nuka-Mixer, power armour station with 3 frames.
+- Crafting stations, Nuka-Mixer, power armour station with 3 frames.
 - Storage cabinets that never run out, base game and every DLC.
-- Target range: holographic targets that stand still and give no XP. Set health (up to 100,000) and armour.
-- Arena: base game and DLC enemies, 1-10 at a time. Frozen until you walk in; they can't follow you out.
+- Target range: holographic targets that give no XP. Set health and armour.
+- Arena: base game and DLC enemies, 1-10 at a time. NEW: you can't die there; a knockout resets the round.
 - NEW Perks & Stats: S.P.E.C.I.A.L., perks, perk points, level, faction relations.
-- NEW Hack and Lock Practice: locks and terminals, Novice to Master, that relock after every try.
+- NEW Hack and Lock Practice: locks and terminals, Novice to Master, that relock.
+- NEW Safety net (holotape, off by default): going down anywhere brings you to the room, healed.
 
-Playing fair is up to you: save before teleporting in.
+Save before teleporting in if you want to play fair.
 
 Own interior cell, no vanilla records edited. Light plugin.

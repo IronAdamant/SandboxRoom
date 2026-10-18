@@ -674,7 +674,7 @@ begin
     if Assigned(tmpl) then
       it := ElementAssign(items, 0, tmpl, False);
   end;
-  SetElementEditValues(it, 'BTXT', text);
+  SetElementEditValues(it, 'BTXT', StringReplace(text, '\n', #13#10, [rfReplaceAll]));  // as in set
   if cond <> '-' then
     SetCondition(it, cond, edid + ' body text');
 end;

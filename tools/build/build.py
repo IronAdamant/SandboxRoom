@@ -49,6 +49,7 @@ def main():
         if line.startswith('ERROR'):
             print(' ', line)
     check_masters(data)
+    check_errors(a.ack)
     for name in [make_spec.MAIN] + addons:
         shutil.copy(data / name, REPO / 'data' / name)
     print('copied plugins to data/')
@@ -64,6 +65,19 @@ def check_masters(data: Path) -> None:
         if got != masters:
             raise SystemExit(f'{name} has masters {got}, expected {masters}')
     print('masters OK')
+
+
+def check_errors(ack: str) -> None:
+    """xEdit's Check for Errors over the built plugin: a record xEdit wrote wrongly (1.1: removing a script property
+    in place left the arena zone's script data corrupt) fails the build instead of the game."""
+    r = subprocess.run([sys.executable, '-m', 'ack', 'xedit', 'run', 'check_errors', make_spec.MAIN, '--timeout', '900'],
+                       cwd=ack, capture_output=True, text=True)
+    run_dir = sorted(Path(ack, 'private', 'runs').glob('*-check_errors'))[-1]
+    report = (run_dir / 'errors.txt').read_text(encoding='utf8', errors='replace') if r.returncode == 0 else r.stdout
+    print(report.splitlines()[0] if report else 'check_errors: no report')
+    if r.returncode != 0 or ' 0 with errors' not in report.splitlines()[0]:
+        print(report)
+        raise SystemExit('the plugin has records with errors (xEdit Check for Errors)')
 
 
 if __name__ == '__main__':

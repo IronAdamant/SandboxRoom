@@ -1,7 +1,9 @@
 1.1.0
 - NEW: Perks & Stats room: S.P.E.C.I.A.L., perks, perk points, level and faction relations.
 - NEW: Hack and Lock Practice room: locks and terminals, Novice to Master, that relock after every try.
-- Xbox: signs no longer show pink.
+- NEW: Arena rounds: you can't die in the arena; a knockout resets the round, the next starts 13 s after you're up.
+- NEW: Safety net on the holotape (off by default): going down anywhere brings you to the room, healed.
+- Companions come with you when you teleport.
 - Characters are lit properly in the room (faces were flat).
 - Arena: hostile Brotherhood of Steel and Institute now spawn and always fight you.
 - Weapon cabinets no longer hold stray ammo; all ammo is in the Ammo cabinet.

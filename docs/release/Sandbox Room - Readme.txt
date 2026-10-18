@@ -6,6 +6,11 @@ A few seconds after you get the Pip-Boy (in Vault 111, with an alternative-start
 existing save), the (Sandbox Room) Holotape is added to your inventory. Play it from the Pip-Boy:
   Teleport In   remembers exactly where you are and takes you to the Sandbox Room
   Teleport Out  takes you back to exactly where you were, with everything you are carrying
+  Safety net    turn on or off (off to begin with; new in 1.1). While it is on you cannot die anywhere: going
+                down brings you to the Sandbox Room, healed (health, limbs, radiation), once you are back on your
+                feet. Teleport Out then takes you back to where you fell.
+Your companions, Dogmeat included, come with you on Teleport In, Teleport Out and the safety net (the game brings
+along one told to wait, too).
 Console: coc SandboxRoom (no return point that way).
 
 WHAT'S INSIDE
@@ -17,6 +22,9 @@ WHAT'S INSIDE
 - Arena: pick an enemy (base game, Automatron, Far Harbor, Nuka-World), then how many (1-10). Enemies stay frozen
   until you walk in, and freeze again when you leave. They cannot follow you out of the arena. Balconies at two
   heights. Kill or remove everything spawned from the terminals.
+  Rounds (new in 1.1): you cannot die in the arena. Going down ends the round: the enemies still standing freeze,
+  healed, back at their spawn points, and you are healed. Once you are up, the next round starts in 13 seconds
+  (a message tells you which knockout it was and how long you lasted); walk out into the lobby to stop.
 - Perks & Stats (new in 1.1, through the door under its sign on the north wall): six terminals.
     S.P.E.C.I.A.L.   raise or lower each attribute, or set all seven at once
     Perks            add or remove any perk chart perk a rank at a time or all ranks at once, remove all perks,
@@ -56,6 +64,9 @@ VERSION HISTORY
 1.1.0  New: Perks & Stats room (S.P.E.C.I.A.L., perks, perk points, level, faction relations; the faction menus
        show where each faction stands).
        New: Hack and Lock Practice room (locks and terminals, Novice to Master, that lock again after each try).
+       New: arena rounds (you cannot die in the arena; a knockout resets the round).
+       New: safety net on the holotape (off by default): going down anywhere brings you to the room, healed.
+       Companions come with you when you teleport.
        Xbox: the signs no longer show pink.
        Characters are lit properly in the room (it was lit evenly from every side, which flattened faces).
        Arena: the hostile Brotherhood of Steel and Institute now spawn, and always fight you.
@@ -65,5 +76,5 @@ VERSION HISTORY
 1.0.0  First release.
 
 UNINSTALLING
-Teleport out first and use "Remove everything spawned" on the arena terminals. Keep a save from before you
-installed the mod.
+Turn the safety net off (holotape), teleport out and use "Remove everything spawned"
+on the arena terminals. Keep a save from before you installed the mod.

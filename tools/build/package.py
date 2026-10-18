@@ -17,10 +17,13 @@ Output in dist/:
       plus the readme. Archive2 writes BA2 version 8, which only the next-gen game (1.10.980+) reads; the old-gen
       game (1.10.163) reads version 1 only, so its players need the loose files. Manual installs copy the contents
       of one folder into Data.
+    Sandbox Room <version> Xbox.achlist   the file list for the Creation Kit's Generate (Xbox archives): the
+      mod's compiled scripts and sign files, without the vanilla scripts Generate adds by itself.
 """
 from __future__ import annotations
 
 import argparse
+import json
 import shutil
 import subprocess
 import zipfile
@@ -50,7 +53,7 @@ def fomod_info(version: str) -> str:
   <Name>Sandbox Room</Name>
   <Author>{AUTHOR}</Author>
   <Version>{escape(version)}</Version>
-  <Description>A testing facility reached by holotape: crafting stations, never-empty cabinets, a target range, an arena, a Perks &amp; Stats room and a Hack and Lock Practice room.</Description>
+  <Description>A testing facility reached by holotape: crafting stations, never-empty cabinets, a target range, an arena where you can't die, a Perks &amp; Stats room, a Hack and Lock Practice room and a safety net.</Description>
 </fomod>
 '''
 
@@ -90,6 +93,16 @@ def stage(tmp: Path) -> Path:
     return root
 
 
+def achlist(out: Path) -> None:
+    """The Creation Kit's file list format: a JSON array of Data-relative paths, CRLF, tab-indented."""
+    prefix = {'Scripts': 'Data\\SCRIPTS\\', 'Meshes': 'Data\\Meshes\\', 'Materials': 'Data\\Materials\\',
+              'Textures': 'Data\\textures\\'}
+    paths = [pre + str(f.relative_to(DATA / kind)).replace('/', '\\')
+             for kind, pre in prefix.items() for f in sorted((DATA / kind / 'SandboxRoom').rglob('*'))
+             if f.is_file() and (kind != 'Scripts' or f.suffix == '.pex')]
+    out.write_bytes(('[\r\n' + ',\r\n'.join('\t' + json.dumps(p) for p in paths) + '\r\n]').encode('utf8'))
+
+
 def archive2(game: Path, root: Path, folders: list[str], out: Path, fmt: str, compression: str) -> None:
     exe = game / 'Tools' / 'Archive2' / 'Archive2.exe'
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -125,6 +138,7 @@ def main():
                 z.write(f, f'{LOOSE}/{f.relative_to(root).as_posix()}')
         z.write(README, 'Sandbox Room - Readme.txt')
     shutil.rmtree(tmp)
+    achlist(DIST / f'Sandbox Room {a.version} Xbox.achlist')
     for f in sorted(DIST.rglob('*')):
         if f.is_file():
             print(f'{f.relative_to(DIST)}  {f.stat().st_size // 1024} KB')

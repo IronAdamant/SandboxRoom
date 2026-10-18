@@ -8,6 +8,12 @@ New
   each faction stands and offer only the other relations.
 - **Hack and Lock Practice room** (west wall): footlockers and terminals locked Novice, Advanced, Expert and Master
   that lock themselves again after every try, and a bobby pin footlocker that never runs out.
+- **Arena rounds**: you cannot die in the arena. Going down ends the round: the enemies still standing freeze,
+  healed, back at their spawn points, and you are healed. Once you are up, a message says which knockout it was and
+  how long you lasted, and the next round starts 13 seconds later. Walk out into the lobby to stop.
+- **Safety net** (holotape, off by default): while it is on you cannot die anywhere. Going down brings you to the
+  Sandbox Room, healed, once you are back on your feet, and Teleport Out takes you back to where you fell.
+- **Companions** (Dogmeat too) come with you on Teleport In, Teleport Out and the safety net, straight away.
 
 Fixes
 - Xbox: the signs no longer show pink (the Xbox archives now come from the Creation Kit, which tiles the textures
