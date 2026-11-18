@@ -14,7 +14,7 @@ Plus `Sandbox Room - Readme.txt` at the top. Manual installs copy the contents o
 
 | File | Where it goes | Limit |
 |---|---|---|
-| `nexus_file_description.txt` | the uploaded file's description | short (1.1.0's 343 characters were accepted) |
+| `nexus_file_description.txt` | the uploaded file's description | 255 characters (the form cuts off the rest) |
 | `nexus_summary_350.txt` | the mod's brief overview (summary) | 350 characters |
 | `nexus_description.bbcode` | the mod page's description (paste into the BBCode / source view) | |
 | `bethesda_net_version_notes.txt` | the changelog entry for the version (the same notes as Bethesda.net) | |
