@@ -1,6 +1,6 @@
 # Sandbox Room changelog
 
-## 1.2.0 (in progress)
+## 1.2.0
 
 New
 - **Lighting terminal** (hall, west wall, by the Hack and Lock Practice door): sets every light in the room to

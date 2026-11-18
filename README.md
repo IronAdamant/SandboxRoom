@@ -118,8 +118,8 @@ Also ships, packed in `Sandbox Room - Main.ba2` / `- Textures.ba2`: the scripts 
 - `tools/build/build.py` - spec + signs + FO4Edit run + copy to `data/`.
 - `tools/build/package.py --version X.Y.Z` - a release in `dist/`: the PC BA2 archives (the Xbox ones come from
   the Creation Kit's Generate at upload: `tools/build/check_xbox.py` checks them), and the Nexus zip: a FOMOD installer offering packed (next-gen) or loose
-  files (old-gen: Archive2 writes BA2 version 8, which the old-gen game cannot read). Release texts and the Bethesda.net steps are in
-  `docs/release/`.
+  files (old-gen: Archive2 writes BA2 version 8, which the old-gen game cannot read). Release texts and the upload steps
+  (`BETHESDA_NET.md`, `NEXUS.md`) are in `docs/release/`.
 - `tools/build/compile.py` - compiles the scripts with the Creation Kit's Papyrus compiler (`--debug` keeps
   `Debug.Trace` lines, which release builds strip).
 - `tools/build/papyrus_log.py on|off` - switches the game's Papyrus log on or off in `Fallout4Custom.ini`.

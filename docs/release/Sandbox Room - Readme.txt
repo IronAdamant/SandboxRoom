@@ -17,6 +17,8 @@ WHAT'S INSIDE
 - Main hall: crafting stations (weapons, armour, chemistry, cooking, robot workbench, Nuka-Mixer, power armour with
   three empty frames) and signed storage cabinets that never run out (Weapons & Ammo, Apparel, Mods, Power Armor,
   Aid, Miscellaneous), with every DLC's items.
+- Lighting terminal (new in 1.2; west wall, beside the Hack and Lock Practice door, behind you on arrival): sets
+  every light in the room to 20, 40, 60, 80 or 100%. It starts at 60%; 100% is the lighting of earlier versions.
 - Target range: four walled bays of holographic targets that stand still, never fight back and give no XP.
   Each bay's terminal sets the target, its health and its armour. Shooting galleries at two heights.
 - Arena: pick an enemy (base game, Automatron, Far Harbor, Nuka-World), then how many (1-10). Enemies stay frozen
@@ -61,6 +63,8 @@ Fallout 4, next-gen or old-gen, with all the DLC: Automatron, Far Harbor, Nuka-W
 and Vault-Tec Workshop (Game of the Year / Anniversary editions include them). No F4SE. Light plugin (ESL).
 
 VERSION HISTORY
+1.2.0  New: Lighting terminal (room lights 20, 40, 60, 80 or 100%; 60% by default, 100% is the old lighting).
+       No more fog in the room: the far end of the hall and of the arena are now clear.
 1.1.0  New: Perks & Stats room (S.P.E.C.I.A.L., perks, perk points, level, faction relations; the faction menus
        show where each faction stands).
        New: Hack and Lock Practice room (locks and terminals, Novice to Master, that lock again after each try).

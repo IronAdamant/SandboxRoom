@@ -39,13 +39,13 @@ Vault-Tec Workshop). One creation carries both platforms.
    (it is already a light plugin through its ESL flag), Include Archives ticked.
    **Xbox: always Generate.** Never upload `_xbox` archives made with Archive2: its XBoxDDS format keeps the
    textures in the PC layout, which the console cannot use (1.0.0 shipped those; Xbox players reported pink signs).
-   Generate tiles them for the console. Its file list must be the **170 files** (1.1.0) of `Scripts\SandboxRoom`
-   (18), `Meshes\SandboxRoom` (50), `Materials\SandboxRoom` (50) and `Textures\SandboxRoom` (52), and nothing from
+   Generate tiles them for the console. Its file list must be the **174 files** (1.2.0) of `Scripts\SandboxRoom`
+   (19), `Meshes\SandboxRoom` (51), `Materials\SandboxRoom` (51) and `Textures\SandboxRoom` (53), and nothing from
    vanilla (it adds `Form.pex`, `ObjectReference.pex`, `ScriptObject.pex`: remove them). Or import
    `dist/Sandbox Room X.Y.Z Xbox.achlist`, which is exactly that list.
 5. Before uploading, check the generated archives: `python tools/build/check_xbox.py` (looks in the game's
    `Data`; `--dir` for another folder). It lists missing or extra files and any texture still in the PC layout;
    upload only when it prints "Xbox archives OK".
-6. On the website: version 1.1.0; requirements = the five DLC; tagline from `bethesda_net_tagline_180.txt`;
+6. On the website: version 1.2.0 (1.1.0 had 170 files; 1.2.0 adds the Lighting terminal's script and sign); requirements = the five DLC; tagline from `bethesda_net_tagline_180.txt`;
    version notes from `bethesda_net_version_notes.txt`; platforms PC and Xbox.
 7. Afterwards, delete the `_xbox` archives from `Data` (the PC game does not need them).

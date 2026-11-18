@@ -23,6 +23,7 @@ A three-storey lab in a clean white high-tech finish, with a proper ceiling and 
   - Aid: Medicine and Chems, Food, Drinks
   - Miscellaneous: Junk (and caps), Magazines, Bobbleheads
   - Every section also has labelled cabinets for each DLC's items: Automatron, Far Harbor, Nuka-World, Contraptions and Vault-Tec.
+- Lighting terminal (new in 1.2): on the west wall beside the Hack and Lock Practice door, right behind you when you arrive. Sets every light in the room to 20, 40, 60, 80 or 100%. It starts at 60%; 100% is the lighting of earlier versions, which was too bright without an ENB.
 
 TARGET RANGE
 A firing lane facing four bays walled off from each other, floor to ceiling.
@@ -74,6 +75,9 @@ COMPATIBILITY
 - Safe to add to an existing save.
 
 CHANGELOG
+1.2.0
+- New: Lighting terminal: set every light in the room to 20, 40, 60, 80 or 100%. 60% is the new default; 100% is the old lighting. Without an ENB the room was too bright, and it drowned out face-lighting mods.
+- No more fog in the room: the far end of the hall and of the arena are now clear.
 1.1.0
 - New: Perks & Stats room: S.P.E.C.I.A.L., perks, perk points, level and faction relations. The faction menus show where each faction stands.
 - New: Hack and Lock Practice room: locks and terminals, Novice to Master, that lock themselves again after every try, and a never-empty bobby pin chest.
