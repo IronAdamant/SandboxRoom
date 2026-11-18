@@ -16,7 +16,8 @@
                                              position and rotation. OPTS: "-" or any of persistent, scale=N,
                                              swap=TOKEN (material swap), radius=N (light radius override),
                                              lock=N (locked at lock level N: 25 Novice, 50 Advanced, 75 Expert,
-                                             100 Master)
+                                             100 Master), parent=EDID (enable parent: a reference placed earlier
+                                             in the same cell), disabled (initially disabled)
     prune    | CELL | PREFIX                 delete this plugin's refs in CELL whose editor IDs start with PREFIX
                                              and that no ref operation above placed (taken out of the spec)
     unref    | EDID | CELL                   delete a placed reference if it exists
@@ -354,7 +355,8 @@ begin
   IndexGroup(ChildGroup(cell));
 end;
 
-// OPTS: "-" or space-separated persistent, scale=N, swap=TOKEN (material swap), radius=N (light radius), lock=N
+// OPTS: "-" or space-separated persistent, scale=N, swap=TOKEN (material swap), radius=N (light radius), lock=N,
+// parent=EDID, disabled
 function Opt(opts, key: string): string;
 var
   sl: TStringList;
@@ -387,7 +389,7 @@ procedure OpRef(edid, cellId, base, pos, rot, opts: string);
 var
   cell, b, r: IInterface;
   i: integer;
-  before, lvl: string;
+  before, lvl, par: string;
 begin
   cell := Rec(cellId);
   b := Token(base);
@@ -430,6 +432,23 @@ begin
   end
   else if Assigned(ElementByPath(r, 'XLOC')) then
     RemoveElement(r, 'XLOC');
+  // the enable parent: the reference follows its enabled state (the room's light levels)
+  par := Opt(opts, 'parent');
+  if par <> '' then begin
+    i := refIdx.IndexOf(par);
+    if i < 0 then
+      Err(edid + ': enable parent ' + par + ' is not placed (yet) in this cell')
+    else begin
+      if not Assigned(ElementByPath(r, 'XESP')) then
+        Add(r, 'XESP', True);
+      SetElementEditValues(r, 'XESP\Reference', IntToHex(GetLoadOrderFormID(ObjectToElement(refIdx.Objects[i])), 8));
+      SetElementNativeValues(r, 'XESP\Flags', 0);
+    end;
+  end
+  else if Assigned(ElementByPath(r, 'XESP')) then
+    RemoveElement(r, 'XESP');
+  if GetIsInitiallyDisabled(r) <> (Opt(opts, 'disabled') <> '') then
+    SetIsInitiallyDisabled(r, Opt(opts, 'disabled') <> '');
   touched.Add(edid);
   Remember(edid, r);
 end;
@@ -795,7 +814,10 @@ end;
 
 // Give records whose object ID is past an ESL's 0xFFF a free ID inside the range, repointing everything that
 // refers to them. The Creation Kit numbers new navmeshes from its own counter (0x15D8 once), and Compact Active
-// File Form IDs does not always catch them; xEdit then refuses to save the ESL.
+// File Form IDs does not always catch them; xEdit then refuses to save the ESL. New records made by this script
+// start past the highest ID in use (0xFFF since 1.1), so they all come through here.
+// Free IDs are taken from 0x800 up, then from 0x001 up: the plugin's header version (1.0) opens 0x001-0x7FF to a
+// light plugin, and the Creation Kit has used them since 1.0 (AgentCreationKit's games.py, light_min_extended).
 function FirstOutOfRange(f: IInterface): IInterface;
 var
   i: integer;
@@ -830,8 +852,13 @@ begin
   e := FirstOutOfRange(f);
   while Assigned(e) do begin
     id := FormID(e) and $FFFFFF;
-    while used.IndexOf(IntToHex(free, 6)) >= 0 do
+    while (free <= $FFF) and (used.IndexOf(IntToHex(free, 6)) >= 0) do begin
       Inc(free);
+      if free = $1000 then
+        free := $001;  // the low range, once 0x800-0xFFF is full
+      if free = $800 then
+        free := $1000;  // both full
+    end;
     if free > $FFF then begin
       Err(GetFileName(f) + ': no free ESL object ID left for ' + Name(e));
       Break;

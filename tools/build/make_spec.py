@@ -58,7 +58,21 @@ LIGHT_BASE, LIGHT_RADIUS = '@InstituteLightWhite01NS', 1100
 # evenly, flattening faces and drowning out face lights (a player report after 1.1).
 DIRECTIONAL_AMBIENT = {'X+': (20, 23, 27), 'X-': (23, 28, 32), 'Y+': (24, 28, 31), 'Y-': (22, 27, 31),
                        'Z+': (19, 19, 23), 'Z-': (27, 32, 37)}
-CELL_INHERITS = '11111111111'  # everything else from the template (XCLL\Inherits, bit 0 first)
+# Everything else from the template (XCLL\Inherits, bit 0 first: ambient colour, directional colour, fog colour, fog
+# near, fog far, directional rotation, directional fade, clip distance, fog power, fog max, light fade distances)
+# except the fog's distances and strength: no fog (1.2). The template's fog (from 2500 to full at 6000, bluish
+# white) hazed the far end of the hall and the arena, both about 6100 long.
+CELL_INHERITS = '11100111101'
+CELL_FOG = {'Fog Near': 100000, 'Fog Far': 200000, 'Fog Max': 0}
+# Lighting terminal (1.2): the room's lights dim in steps (a player report: too bright without an ENB). Each light
+# is placed once per level, with a copy of LIGHT_BASE whose fade (its brightness, 4.0 for LIGHT_BASE) is that
+# percentage of it, all of a level under one enable-parent marker; the terminal enables one marker and disables the
+# rest. Papyrus cannot change a light's brightness, so this is how a light dims without F4SE. 100 keeps
+# LIGHT_BASE itself, the lighting of 1.0 and 1.1 (those references keep their editor IDs).
+LIGHT_FADE = 4.0
+LIGHT_LEVELS = [20, 40, 60, 80, 100]       # menu items 1-5 (LightingTerminalScript: item N is level N)
+LIGHT_DEFAULT = 60
+LIGHT_GLOBAL = 'SBR_LightLevel'            # the current level in percent, for the terminal's text
 
 # Main hall bounds. West to east: crafting and chests, the open arena (ARENA_X to LANE_X), the firing lane under
 # the galleries (LANE_X to BAY_X) and the target bays (BAY_X to X1).
@@ -611,13 +625,40 @@ def ceiling(s: Spec, prefix: str, x0: int, x1: int, y0: int, y1: int, lights: li
     slab_grid(s, prefix + 'Ceiling', x0, x1, y0, y1, WALL_TOP + (2 * 32 if big else 32), big)
     for k, (x, y) in enumerate(lights):
         s.ref(f'{prefix}Lamp_{k}', '@InsLightFixture02', x, y, WALL_TOP)
-        s.ref(f'{prefix}Light_{k}', LIGHT_BASE, x, y, WALL_TOP - 60, opts=f'radius={LIGHT_RADIUS}')
+        room_light(s, f'{prefix}Light_{k}', x, y, WALL_TOP - 60, LIGHT_RADIUS)
 
 
 def light(s: Spec, edid: str, x: int, y: int, z: int, radius: int = LIGHT_RADIUS):
     """A light under a gallery deck, with its fixture on the deck's underside."""
     s.ref(edid + 'Lamp', '@InsLightFixture02', x, y, z)
-    s.ref(edid, LIGHT_BASE, x, y, z - 40, opts=f'radius={radius}')
+    room_light(s, edid, x, y, z - 40, radius)
+
+
+def light_marker(level: int) -> str:
+    return f'SBR_LightLevel{level}Marker'
+
+
+def light_levels(s: Spec):
+    """What the lighting terminal switches between: a light base and an enable-parent marker per level (only the
+    default's marker starts enabled), and the global holding the current level. Before any room light is placed."""
+    s.comment(f'light levels (Lighting terminal): {LIGHT_LEVELS}% of the lights\' brightness, {LIGHT_DEFAULT}% at first')
+    for level in LIGHT_LEVELS:
+        if level != 100:
+            s.op('copy', LIGHT_BASE, f'SBR_Light{level}')
+            s.op('set', f'SBR_Light{level}', 'FNAM', f'{LIGHT_FADE * level / 100:.6f}')
+        s.ref(light_marker(level), '@XMarker', X0 + 200, -48, persistent=True,
+              opts='' if level == LIGHT_DEFAULT else 'disabled')
+    glob(s, LIGHT_GLOBAL)
+    s.op('set', LIGHT_GLOBAL, 'FLTV', LIGHT_DEFAULT)
+
+
+def room_light(s: Spec, edid: str, x: int, y: int, z: int, radius: int):
+    """A room light, once per light level, each under its level's marker. The 100% one keeps the plain editor ID
+    and LIGHT_BASE (the light of 1.0 and 1.1)."""
+    for level in LIGHT_LEVELS:
+        full = level == 100
+        s.ref(edid if full else f'{edid}_L{level}', LIGHT_BASE if full else f'@SBR_Light{level}', x, y, z,
+              opts=f'radius={radius} parent={light_marker(level)}')
 
 
 EDGE_RZ = {'S': 0, 'W': 90, 'N': 180, 'E': 270}  # turns a deck edge piece (made for the cell's south edge)
@@ -655,9 +696,12 @@ def hall(s: Spec):
     s.op('set', CELL, 'XCIM', '@InstituteImageSpaceF4New')
     s.op('set', CELL, 'LTMP', '@InstituteLightingTemplateNew')
     s.op('set', CELL, r'XCLL\Inherits', CELL_INHERITS)
+    for path, v in CELL_FOG.items():
+        s.op('set', CELL, rf'XCLL\{path}', f'{v:.6f}')
     for side, rgb in DIRECTIONAL_AMBIENT.items():
         for channel, v in zip(('Red', 'Green', 'Blue'), rgb):
             s.op('set', CELL, rf'XCLL\Directional Ambient Lighting Colors\Directional\{side}\{channel}', v)
+    light_levels(s)
     slab_grid(s, 'SBR_Floor', X0, X1, Y0, Y1, 0, big=True)
     wall_ring(s, 'SBR_Hall', X0, X1, Y0, Y1, doors={'S': [HALL_DOOR_X], 'N': [PERKS_DOOR_X], 'W': [HACK_DOOR_Y]})
     door(s, 'SBR_WingDoor', HALL_DOOR_X, Y0, along_x=True)
@@ -1186,6 +1230,36 @@ def storage(s: Spec, chests: dict):
                         slot_place(key, chests, slot), what)
 
 
+LIGHTING_TERMINAL_Y = -48                  # hall west wall, between the Misc cabinets (to y -124) and the Hack and
+                                           # Lock door (its frame from y 28): a few steps behind the arrival point
+
+
+def lighting_terminal(s: Spec):
+    s.comment('the Lighting terminal (1.2), by the Hack and Lock Practice door: dims every light in the room')
+    term, sc = 'SBR_LightingTerminal', 'SandboxRoom:LightingTerminalScript'
+    s.terminal(term, 'Sandbox Room: Lighting',
+               'SANDBOX ROOM\nLIGHTING\nSets how bright the lights are, everywhere in the Sandbox Room. '
+               f'{LIGHT_DEFAULT}% is the default; 100% is the lighting of earlier versions. With an ENB, its own '
+               'settings decide how much of this shows.')
+    for level in LIGHT_LEVELS:
+        s.op('body', term, f'Lights: {level}%', f'GetGlobalValue:@{LIGHT_GLOBAL}:{level}')
+    # the menu offers the levels it is not at now (conditions only test "equals": one copy per current level)
+    notes = {LIGHT_DEFAULT: ' (default)', 100: ' (earlier versions)'}
+    for current in LIGHT_LEVELS:
+        for n, level in enumerate(LIGHT_LEVELS, 1):
+            if level != current:
+                s.op('menu', term, n, f'{level}%{notes.get(level, "")}', '-',
+                     f'GetGlobalValue:@{LIGHT_GLOBAL}:{current}')
+    s.op('script', term, sc)
+    s.op('prop', term, sc, 'Markers', 'Array of Object', ','.join('@' + light_marker(lv) for lv in LIGHT_LEVELS))
+    step = LIGHT_LEVELS[0]
+    assert LIGHT_LEVELS == [step * n for n in range(1, len(LIGHT_LEVELS) + 1)], 'the script takes item N as N * Step'
+    s.op('prop', term, sc, 'Step', 'Int32', step)
+    s.op('prop', term, sc, 'Current', 'Object', '@' + LIGHT_GLOBAL)
+    s.ref(term + 'Ref', '@' + term, X0 + 106, LIGHTING_TERMINAL_Y, rz=FACE_EAST)
+    label(s, term + 'Label', 'Lighting', X0 + 106, LIGHTING_TERMINAL_Y, 'E', 127, 34)
+
+
 def main_plugin(s: Spec, chests: dict):
     s.file_op(MAIN)
     s.op('master', 'Fallout4.esm')
@@ -1205,6 +1279,7 @@ def main_plugin(s: Spec, chests: dict):
         s.ref(f'SBR_PowerArmorFrame_{n}', '@PowerArmorFrameFurnitureNoCore', x, Y1 - 190, rz=FACE_SOUTH)
 
     storage(s, chests)
+    lighting_terminal(s)
 
     s.comment('globals, holotape and the quest that hands it out once the player has a Pip-Boy')
     s.op('new', 'GLOB', 'SBR_ReturnSaved')

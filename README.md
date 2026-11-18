@@ -77,6 +77,14 @@ the arrival point): a small room for practising lockpicking and hacking.
   terminal (or, if it is left unopened, 15 seconds later), ready for the next try. Advanced and above need the
   Locksmith or Hacker perk ranks, as anywhere in the game: the Perks & Stats room can add them.
 
+**Lighting terminal** (new in 1.2; in the hall's west wall, between the Miscellaneous cabinets and the Hack and Lock
+Practice door): sets every light in the room to 20, 40, 60, 80 or 100% brightness; 60% at first, 100% is the
+lighting of 1.0 and 1.1. Each light is placed once per level, with a copy of its light whose fade is that share of
+the original's, under an enable-parent marker per level (`SBR_LightLevel<N>Marker`); the terminal enables one marker
+and disables the rest (Papyrus cannot dim a light without F4SE). The menu lists the levels other than the current
+one. The cell's ambient light and the imagespace are unchanged; since 1.2 the cell has no fog (it keeps the
+Institute lighting template's but sets its own fog distances and a fog max of 0).
+
 **(Sandbox Room) Holotape**, added to your inventory a few seconds after you get the Pip-Boy (in Vault 111,
 with an alternative-start mod, or right away on an existing save): *Teleport In* saves your exact position and
 takes you to the room; inside, it offers *Teleport Out* instead, which returns you there with everything you
@@ -142,7 +150,8 @@ a build with walls over the arena doorways:
 3. `python tools/build/build.py ...` (removes the walls; the cut navmesh stays).
 
 After any Creation Kit save, re-run `build.py`: it also resets the header's next object ID, so new forms stay
-inside the ESL range.
+inside the ESL range. New forms get free IDs from 0x800 to 0xFFF, then from 0x001 (the plugin's header version,
+1.0, allows 0x001-0x7FF; 0x800-0xFFF has been nearly full since 1.1).
 
 **Regenerate the navmesh whenever the plugin's masters change.** Adding the DLC masters in 1.0 left the navmesh
 index out of step with the navmesh (the Creation Kit warns "Did not find matching NavMeshInfo" when the cell is

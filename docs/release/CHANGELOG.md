@@ -1,5 +1,16 @@
 # Sandbox Room changelog
 
+## 1.2.0 (in progress)
+
+New
+- **Lighting terminal** (hall, west wall, by the Hack and Lock Practice door): sets every light in the room to
+  20%, 40%, 60%, 80% or 100% brightness. 60% is the new default; 100% is the lighting of 1.0 and 1.1. Without an
+  ENB the room was too bright, and the strong lights drowned out face-lighting mods. The menu offers the levels
+  you are not at.
+
+Fixes
+- No more fog in the room: the far end of the hall and of the arena were hazed over.
+
 ## 1.1.0
 
 New
